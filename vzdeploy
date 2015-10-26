@@ -198,13 +198,6 @@ check_kernel_update_permission()
     fi
     
     if uname -r | grep -v  $KERNEL_VERSION ; then
-	if uname -r | grep -q linode ; then
-	   if [ -f /proc/xen/capabilities ]; then
-	      LINODE=true
-	   else
-	      LINODE_KVM=true
-           fi
-	else
 	echo "Your server has non-standard kernel installed (see above)" | tee -a $log
 	echo "To resolve the issue, we can unregister this kernel RPM from RPM database." | tee -a $log
 	echo -n "Do you want to do that [Y/N]: " | tee -a $log
@@ -221,7 +214,6 @@ check_kernel_update_permission()
 		exit 1
 		;;
 	esac
-	fi
     fi
 }
 
@@ -287,27 +279,6 @@ continue with kexec kernel bootup installation for Virtuozzo Linux kernel?" | te
     esac
 fi
 }
-
-check_linode_kvm ()
-{
-if uname -r | grep -q linode && [ ! -f /proc/xen/capabilities ] ; then
-    echo -e " This looks like Linode KVM. Linode KVM doesn't let custom\n \
-kernel installations via grub. We can do it using kexec. Would you like us to\n \
-continue with kexec kernel bootup installation for Virtuozzo Linux kernel?" | tee -a $log
-    read YN
-    case $YN in [yY]|[yY][eE][sS])
-	kexec=true
-	echo "Enabled" | tee -a $log
-	;;
-	*)
-	echo "Exiting" | tee -a $log
-	rm -f $lock
-	exit 1;
-	;;
-    esac
-fi
-}
-
 
 backup ()
 {
@@ -403,51 +374,6 @@ EOF
 }
 
 
-write_linode_grub_conf ()
-{
-if [ -e /boot/grub/grub.conf ]; then
-cp /boot/grub/grub.conf /boot/grub/grub.conf.backup
-fi
-
-mkdir -p /boot/grub/
-
-if [ "$OS_VERSION" -eq "6" ]; then
-	KVERSION=`python -c 'import glob, re, rpm; print "%s-%s.%s" % sorted([(h["version"], h["release"], h["arch"]) for h in rpm.TransactionSet().dbMatch(rpm.RPMTAG_NAME, "kernel")], cmp=lambda b, a: rpm.labelCompare(("0", a[0], a[1]), ("0", b[0], b[1])))[0]'`
-
-    cat > /boot/grub/grub.conf << EOF
-
-default=0
-timeout=5
-hiddenmenu
-title Virtuozzo Linux ($KVERSION)
-	root (hd0)
-	kernel /boot/vmlinuz-$KVERSION ro root=/dev/xvda xencons=tty console=tty1 console=hvc0 crashkernel=auto SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 KEYTABLE=us
-	initrd /boot/initramfs-$KVERSION.img
-
-EOF
-fi
-
-if [ "$OS_VERSION" -eq "5" ]; then
-	KVERSION=`rpm -q kernel-xen --qf "%{version}-%{release}\n" | sort | tail -1`xen
-
-    cat > /boot/grub/grub.conf << EOF
-
-default=0
-timeout=5
-title CentOS ($KVERSION)
-    root (hd0)
-    kernel /boot/vmlinuz-$KVERSION root=/dev/xvda console=xvc0 xencons=xvc0
-    initrd /boot/initrd-$KVERSION.img
-
-EOF
-fi
-
-
-ln -sf /boot/grub/grub.conf /boot/grub/menu.lst
-ln -sf /boot/grub/grub.conf /etc/grub.conf
-
-}
-
 add_digitalocean_kexec ()
 {
 if [ $kexec == true ]; then
@@ -482,7 +408,6 @@ fi
 init_vars $0
 check_release
 check_digitalocean
-# check_linode_kvm
 check_yum
 check_source
 
@@ -612,37 +537,9 @@ PKGS="$KERNEL vzlinux-release"
 	yum -y $ENABLED_REPOS --disableexcludes=main install $PKGS 2>&1 | tee -a $log
 	check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
 
-	if [ "$OS_VERSION" = "7" ] && [ "$LINODE_KVM" = "true" ]; then
-	    yum -y install grub2 2>&1 | tee -a $log
-            cat > /etc/default/grub << EOF
-GRUB_TIMEOUT=5
-GRUB_DISTRIBUTOR="$(sed 's, release .*$,,g' /etc/system-release)"
-GRUB_DEFAULT=saved
-GRUB_DISABLE_SUBMENU=true
-GRUB_TERMINAL_OUTPUT="console"
-GRUB_DISABLE_RECOVERY="true"
-GRUB_DISABLE_LINUX_UUID="true"
-GRUB_CMDLINE_LINUX="crashkernel=auto console=tty1 console=ttyS0,19200n8"
-GRUB_SERIAL_COMMAND="serial --speed=19200 --unit=0 --word=8 --parity=no --stop=1"
-EOF
-	    ln -s /boot/grub2 /boot/grub
-	    grub2-mkconfig -o /boot/grub2/grub.cfg 2>&1 | tee -a $log
-	fi
-
-
 fi
-
 
 add_digitalocean_kexec
-
-if [ "$LINODE" = "true" ]; then
-write_linode_grub_conf
-echo "Please edit your Linode profile, select pv-grub-x86_64 or pv-grub-x86_32 as a boot kernel and uncheck \"Xenify Distro\" button"
-fi
-
-if [ "$OS_VERSION" = "7" ] && [ "$LINODE_KVM" = "true" ]; then
-echo "Please edit configuration of your Linode and select \"GRUB 2\" in Boot Settings - Kernel"
-fi
 
 if [ "$LES" = "true" ]; then
 echo "Linux Environment Security was disabled, you can re-enable it if needed"
