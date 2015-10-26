@@ -1,18 +1,18 @@
 #!/bin/sh
 
-## centos2cl INFO
-# Short Description	:upgrades CentOS or RHEL distro to CloudLinux
+## vzdeploy INFO
+# Short Description	:upgrades CentOS or RHEL distro to Virtuozzo Linux
 # Description      	:removes yum repo configuration related to CentOS/RHEL,
-#	  		as well as release related packages. Installs cloudlinux
+#	  		as well as release related packages. Installs Virtuozzo Linux
 #		        release related packages, new kernel and lve tools
-## centos2cl INFO
+## vzdeploy INFO
 
-version="1.21"
+version="0.1"
 
 init_vars()
 {
-   log=/var/log/cldeploy.log
-   lock=/var/lock/cldeploy.lck
+   log=/var/log/vzdeploy.log
+   lock=/var/lock/vzdeploy.lck
 
    wget="/usr/bin/wget"
    wget_options="-q"
@@ -21,25 +21,22 @@ init_vars()
    buildeasyapache=true
    builddirectadmin=true
    regen_modprobe_conf=false
-   activationkey=""
    components=false
    conversion=false
    hostinglimits=false
    conversiononly=false
    skipkmodcheck=false
    skipversioncheck=false
-   registration=true
    beta=false
-   serverurl="https://xmlrpc.cln.cloudlinux.com/XMLRPC/"
    NO_ARGS=0
 
    # Update checker URL
    checksite="http://repo.cloudlinux.com/cloudlinux/sources/cln/"
    checkfile="version.dat"
    checkurl="$checksite$checkfile"
-   scriptname="cldeploy"
+   scriptname="vzdeploy"
    upgradeurl="$checksite$scriptname"
-   script="cldeploy"
+   script="vzdeploy"
    dry_run="0"
    script="$1"
       case "$script" in
@@ -163,7 +160,7 @@ check_version()
          exec "$script" --skip-version-ckeck $*
          error "Failed to run $script $*"
       else
-         echo "New version of script is available: http://repo.cloudlinux.com/cloudlinux/sources/cln/cldeploy"
+         echo "New version of script is available: $upgradeurl"
          echo "Please download new script, review code and run it."
          echo "If you prefer to use current version, run it with \"--skip-version-check\" key."
          exit 1
@@ -255,24 +252,19 @@ CPU=i686
 fi
 
 OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cut -c 1)"
-    if [ "$OS_VERSION" -eq "5" ]; then
-    KERNEL_VERSION=2.6.18
-    CLOUDLINUX_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/5/cloudlinux5-release-current.noarch.rpm
-    CLOUDLINUX_LOGOS=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/5/cloudlinux-logos-0.3-1.el5.1.noarch.rpm
-    CENTOS_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/centos/5/${ARCH}/centos5-release-current.${ARCH}.rpm
-    elif [ "$OS_VERSION" -eq "6" ]; then
+    if [ "$OS_VERSION" -eq "6" ]; then
     KERNEL_VERSION=2.6.32
-    CLOUDLINUX_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/6/${ARCH}/cloudlinux6-release-current.${CPU}.rpm
-    CLOUDLINUX_LOGOS=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/6/i386/redhat-logos-60.0.14-1.el6.cloudlinux.noarch.rpm
+    VIRTUOZZO_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/6/${ARCH}/cloudlinux6-release-current.${CPU}.rpm
+    VIRTUOZZO_LOGOS=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/6/i386/redhat-logos-60.0.14-1.el6.cloudlinux.noarch.rpm
     CENTOS_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/centos/6/${ARCH}/centos6-release-current.${CPU}.rpm
     elif [ "$OS_VERSION" -eq "7" ]; then
     KERNEL_VERSION=3.10.0
-    CLOUDLINUX_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/7/${ARCH}/cloudlinux7-release-current.${CPU}.rpm
-    CLOUDLINUX_LOGOS=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/7/${ARCH}/cloudlinux-logos-70.0.3-5.el7.noarch.rpm
+    VIRTUOZZO_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/7/${ARCH}/cloudlinux7-release-current.${CPU}.rpm
+    VIRTUOZZO_LOGOS=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/7/${ARCH}/cloudlinux-logos-70.0.3-5.el7.noarch.rpm
     CENTOS_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/centos/7/${ARCH}/centos6-release-current.${CPU}.rpm
     fi
-    if [ "$OS_VERSION" != 5 ] && [ "$OS_VERSION" != 6 ] && [ "$OS_VERSION" != 7 ]; then
-	echo "This script is for Version 5 or 6 only" | tee -a $log
+    if [ "$OS_VERSION" != 6 ] && [ "$OS_VERSION" != 7 ]; then
+	echo "This script is for Version 6 or 7 only" | tee -a $log
 	rm -f $lock
 	exit 1;
     elif [ -f /proc/vz/vestat ]; then
@@ -314,7 +306,7 @@ check_digitalocean ()
 if [ -f /etc/digitalocean ]; then
     echo -e " This looks like DigitalOcean droplet. DigitalOcean doesn't let custom\n \
 kernel installations via grub. We can do it using kexec. Would you like us to\n \
-continue with kexec kernel bootup installation for CloudLinux kernel?" | tee -a $log
+continue with kexec kernel bootup installation for Virtuozzo Linux kernel?" | tee -a $log
     read YN
     case $YN in [yY]|[yY][eE][sS])
 	kexec=true
@@ -334,7 +326,7 @@ check_linode_kvm ()
 if uname -r | grep -q linode && [ ! -f /proc/xen/capabilities ] ; then
     echo -e " This looks like Linode KVM. Linode KVM doesn't let custom\n \
 kernel installations via grub. We can do it using kexec. Would you like us to\n \
-continue with kexec kernel bootup installation for CloudLinux kernel?" | tee -a $log
+continue with kexec kernel bootup installation for Virtuozzo Linux kernel?" | tee -a $log
     read YN
     case $YN in [yY]|[yY][eE][sS])
 	kexec=true
@@ -352,7 +344,7 @@ fi
 
 backup ()
 {
-    BACKUP=/etc/cl-convert-saved
+    BACKUP=/etc/virtuozzo-convert-saved
     mkdir -p $BACKUP
     cp /etc/redhat-release $BACKUP 2>&1 | tee -a $log
     #disable redhat
@@ -378,7 +370,7 @@ prep ()
 {
     yum clean all 2>&1 | tee -a $log
     rpm --import http://repo.cloudlinux.com/cloudlinux/security/RPM-GPG-KEY-CloudLinux  >> $log 2>&1
-    rpm -Uvh $CLOUDLINUX_RELEASE $CLOUDLINUX_LOGOS --force >> $log 2>&1 ;
+    rpm -Uvh $VIRTUOZZO_RELEASE $VIRTUOZZO_LOGOS --force >> $log 2>&1 ;
     # Handle LES
     if [ -x /usr/local/sbin/les ]; then
     LES=true
@@ -497,17 +489,12 @@ print_help ()
 Usage:
 
   -h, --help            Print this message
-  -k, --key <key>       Update your system to CloudLinux with activation key
-  -i, --byip		Update your system to CloudLinux and register by IP
   -c, --uninstall	Convert CloudLinux back to CentOS
-  --serverurl		Use non-default registratio server
-				(default is https://xmlrpc.cln.cloudlinux.com/XMLRPC)
   --components-only     Install control panel components only
   --conversion-only	Do not install control panel components after converting
   --hostinglimits	Install mod_hostinglimits rpm
   --skip-kmod-check	Skip check for unsupported kmods
   --skip-version-check  Do not check for script updates
-  --skip-registration   Don't register on CLN if already have access to CL repos
 EOF
 }
 
@@ -598,15 +585,15 @@ check_source
 
 if [ -f $lock ] ; then
     if [ -d /proc/$(cat $lock) ] ; then
-    echo "cldeploy is already running"
+    echo "$scriptname is already running"
     exit 1
     fi
 fi
 
 echo $$ > $lock
-check_exit_code 0 "Please run cldeploy as root"
+check_exit_code 0 "Please run $scriptname as root"
 
-options=`getopt -o ecmik: -l uninstall,buildeasyapache,regenmodprobeconf,components-only,conversion-only,hostinglimits,skip-kmod-check,help,byip,skip-version-check,skip-registration,beta,serverurl:,key: -- "$@"`
+options=`getopt -o ecmik: -l uninstall,buildeasyapache,regenmodprobeconf,components-only,conversion-only,hostinglimits,skip-kmod-check,help,skip-version-check,beta: -- "$@"`
 
 if [ $? != 0 ] ; then print_help ; rm -f $lock; exit 1 ; fi
 
@@ -625,16 +612,6 @@ while true; do
 	;;
     -e|--buildeasyapache)
 	buildeasyapache=true
-	shift
-	;;
-    -k|--key)
- 	conversion=true
-	activationkey=$2
-	shift 2
-	;;
-    -i|--byip)
- 	conversion=true
-	activationkey=false
 	shift
 	;;
     -m|--regenmodprobeconf)
@@ -659,14 +636,6 @@ while true; do
 	;;
     --skip-version-check)
 	skipversioncheck=true
-	shift
-	;;
-    --serverurl)
-	serverurl=$2
-	shift 2
-	;;
-    --skip-registration)
-	registration=false
 	shift
 	;;
     --beta)
@@ -753,10 +722,6 @@ if [ "$vzbeta" != "true" ]; then
     check_source
 fi
 
-if [ "$registration" = "true" ] ; then
-    backup
-    prep
-fi
 check_ovh
 check_root
 yum clean all 2>&1 | tee -a $log
@@ -786,23 +751,6 @@ PKGS="$KERNEL cloudlinux-release lve lve-utils liblve liblve-devel lve-stats pam
 	fi
 
 	if [ $NEED_SOURCE = "YES" ] ; then PKGS="$PKGS $KERNEL-devel gcc make"; fi
-
-	if [ "$registration" = "true" ] ; then
-	yum -y --disablerepo=* --enablerepo=cloudlinux-base --enablerepo=cloudlinux-updates install yum-rhn-plugin 2>&1 | tee -a $log
-	check_pipestatus 0 "Unable to install yum-rhn-plugin, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
-	echo -n "Registering... " | tee -a $log
-
-        if [[ $activationkey != "false" ]]; then
-	    /usr/sbin/rhnreg_ks --activationkey $activationkey --serverUrl=$serverurl 2>&1 | tee -a $log
-	    check_pipestatus 0 "Unable to register at CLN server, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
-	else
-	    /usr/sbin/clnreg_ks 2>&1 | tee -a $log
-	    check_pipestatus 0 "Unable to register at CLN server, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
-        fi
-
-	check_cloudlinux_repos
-	if [ $? -ne 0 ]; then echo "No valid repo in repolist output" | tee -a $log; rm -f $lock; exit 1; fi; echo "Success" | tee -a $log
-	fi
 
 	if rpm -q openssl-1.0.1e-30.el6.8 2>&1 > /dev/null; then
 	    yum -y downgrade openssl-1.0.1e-30.el6_6.8 openssl-devel-1.0.1e-30.el6_6.8 openssl-perl-1.0.1e-30.el6_6.8 \
@@ -925,6 +873,6 @@ if [ "$LES" = "true" ]; then
 echo "Linux Environment Security was disabled, you can re-enable it if needed"
 fi
 
-echo "You can find complete log in /var/log/cldeploy.log"
+echo "You can find complete log in $log"
 rm -f $lock
 exit 0
