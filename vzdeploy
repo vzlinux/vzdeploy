@@ -183,7 +183,7 @@ check_kernel_update_permission()
 
 	if rpm -q --qf '%{name}\n' `rpm -qa | grep hpahcisr` > /dev/null 2>&1 ; then
 	    echo "This server uses a binary driver hpahcisr.ko (HP AHCI Software RAID)."
-	    echo "That driver is not compatible with CloudLinux kernel."
+	    echo "That driver is not compatible with Virtuozzo Linux kernel."
 	    echo "We don’t know about any open source alternative for that driver."
 	    echo "The only work around known to us today is to disable RAID feature in system BIOS."
 	    echo "and configure Linux software raid instead. Such work around requires full re-install of the OS."
@@ -194,7 +194,7 @@ check_kernel_update_permission()
     if [ "$skipkmodcheck" = "false" ] ; then
 	if rpm -q --qf '%{name}\n' `rpm -qa | grep ^kmod\-` | grep -v -e lve -e iolimits -e aacraid -e megaraid_sas -e1000e -e r8168 -e microsoft -e igb -e libs -e ^kmod$; then
 	    echo "You have third-party kernel module rpm installed (see line above)."
-	    echo "It's not compatible with CloudLinux kernel."
+	    echo "It's not compatible with Virtuozzo Linux kernel."
 	    echo "Please contact Virtuozzo Linux support at $helpdesk"
 	    rm -f $lock
 	exit 1
@@ -491,7 +491,7 @@ print_help ()
 Usage:
 
   -h, --help            Print this message
-  -c, --uninstall	Convert CloudLinux back to CentOS
+  -c, --uninstall	Convert Virtuozzo Linux back to CentOS
   --components-only     Install control panel components only
   --conversion-only	Do not install control panel components after converting
   --hostinglimits	Install mod_hostinglimits rpm
@@ -517,7 +517,7 @@ if [ "$OS_VERSION" -eq "6" ]; then
 default=0
 timeout=5
 hiddenmenu
-title CloudLinux ($KVERSION)
+title Virtuozzo Linux ($KVERSION)
 	root (hd0)
 	kernel /boot/vmlinuz-$KVERSION ro root=/dev/xvda xencons=tty console=tty1 console=hvc0 crashkernel=auto SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 KEYTABLE=us
 	initrd /boot/initramfs-$KVERSION.img
@@ -553,7 +553,7 @@ if [ $kexec == true ]; then
     cat > /etc/rc.d/init.d/kexec << EOF
 #!/bin/bash
 #
-# Boot CloudLinux kernel via kexec
+# Boot Virtuozzo Linux kernel via kexec
 #
 # chkconfig: 345 01 99
 . /etc/init.d/functions
@@ -708,8 +708,8 @@ if [[ $uninstall == "true" ]]; then
 	rpm -e rhn-client-tools rhn-check rhnsd rhn-setup rhnlib yum-rhn-plugin 2>&1 | tee -a $log
 	echo "You converted back to CentOS" | tee -a $log
 	echo "Now is the time to install kernel." | tee -a $log
-	echo -e "To delete CloudLinux kernel do \nrpm -e --nodeps $(rpm -qa | grep ^kernel | grep lve | tr -s '\n' ' ')"
-	echo "To install new CentOS kernel once you deleted CloudLinux kernel, type yum install kernel" | tee -a $log
+	echo -e "To delete Virtuozzo Linux kernel do \nrpm -e --nodeps $(rpm -qa | grep ^kernel | grep lve | tr -s '\n' ' ')"
+	echo "To install new CentOS kernel once you deleted Virtuozzo Linux kernel, type yum install kernel" | tee -a $log
 	echo "If yum say that latest kernel is already installed - it\'s Ok" | tee -a $log
 	echo "Please check your bootloader configuration before rebooting the system" | tee -a $log
 	rm -f $lock
