@@ -272,32 +272,17 @@ OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cu
     elif [ -f /proc/vz/vestat ]; then
 	if [ ! -f /proc/lve/list ]; then
 	    echo "You are running inside VZ container, without LVE support." | tee -a $log
-	    echo "For details on VZ support please, see http://www.cloudlinux.com/vz-compat.php" | tee -a $log
 	    rm -f $lock
 	    exit 1;
         else
 	    if [ -c /dev/lve ]; then
-	    echo "You are running inside VZ container. Only limited functionality is supported." | tee -a $log
-	    echo "You can find more info on supported functionality at http://www.cloudlinux.com/vz-supported.php" | tee -a $log
-	    echo -n "Do you want to continue [Y/N]: " | tee -a $log
-	    read YN
-	    case $YN in
-	    [yY]|[yY][eE][sS])
-               vzbeta=true
-               echo "Enabled" | tee -a $log
-               ;;
-	    *)
-		echo "Exiting" | tee -a $log
-		rm -f $lock
-		exit 1
-		;;
-		esac
+	        echo "You are running inside VZ container." | tee -a $log
 	    else
-	    CTNUM=`cat /proc/vz/veinfo|tr -s ' '|cut -d' ' -f2`
-	    echo "LVE is disabled for this container. Please, ask your host to enable LVE on your container. They can do it by running:" | tee -a $log
-	    echo -e "vzctl set $CTNUM --devnodes lve:rw --save" | tee -a $log
-	    rm -f $lock
-	    exit 1;
+	        CTNUM=`cat /proc/vz/veinfo|tr -s ' '|cut -d' ' -f2`
+	        echo "LVE is disabled for this container. Please, ask your host to enable LVE on your container. They can do it by running:" | tee -a $log
+	        echo -e "vzctl set $CTNUM --devnodes lve:rw --save" | tee -a $log
+	        rm -f $lock
+	        exit 1;
 	    fi
 	fi
     fi;
