@@ -260,26 +260,6 @@ OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cu
     fi;
 }
 
-check_digitalocean ()
-{
-if [ -f /etc/digitalocean ]; then
-    echo -e " This looks like DigitalOcean droplet. DigitalOcean doesn't let custom\n \
-kernel installations via grub. We can do it using kexec. Would you like us to\n \
-continue with kexec kernel bootup installation for Virtuozzo Linux kernel?" | tee -a $log
-    read YN
-    case $YN in [yY]|[yY][eE][sS])
-	kexec=true
-	echo "Enabled" | tee -a $log
-	;;
-	*)
-	echo "Exiting" | tee -a $log
-	rm -f $lock
-	exit 1;
-	;;
-    esac
-fi
-}
-
 backup ()
 {
     BACKUP=/etc/virtuozzo-convert-saved
@@ -373,41 +353,8 @@ Usage:
 EOF
 }
 
-
-add_digitalocean_kexec ()
-{
-if [ $kexec == true ]; then
-    yum -y install kexec-tools 2>&1 | tee -a $log
-    cat > /etc/rc.d/init.d/kexec << EOF
-#!/bin/bash
-#
-# Boot Virtuozzo Linux kernel via kexec
-#
-# chkconfig: 345 01 99
-. /etc/init.d/functions
-
-if [ "\$1" != "start" ]; then
-   exit 0
-fi
-
-touch /var/lock/subsys/local
-latestkernel=\`python -c 'import glob, re, rpm; print "%s-%s.%s" % sorted(filter(lambda r: r is not None, [re.search("/boot/vmlinuz-([^-]+)-(.*?)\.([^\.]+)$", f) for f in glob.glob("/boot/vmlinuz-*lve*")]), cmp=lambda b, a: rpm.labelCompare(("0", a.group(1), a.group(2)), ("0", b.group(1), b.group(2))))[0].groups()'\`
-if [ ! -f /boot/try-boot-cl-kernel ]; then
-  touch /boot/try-boot-cl-kernel
-  kexec -l /boot/vmlinuz-\${latestkernel} --initrd=/boot/initramfs-\${latestkernel}.img --append="`cat /proc/cmdline`"
-  kexec -e
-else
-  rm /boot/try-boot-cl-kernel
-fi
-EOF
-    /bin/chmod a+x /etc/rc.d/init.d/kexec
-    /sbin/chkconfig --add kexec 2>&1 | tee -a $log
-fi
-}
-
 init_vars $0
 check_release
-check_digitalocean
 check_yum
 check_source
 
@@ -538,8 +485,6 @@ PKGS="$KERNEL vzlinux-release"
 	check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
 
 fi
-
-add_digitalocean_kexec
 
 if [ "$LES" = "true" ]; then
 echo "Linux Environment Security was disabled, you can re-enable it if needed"
