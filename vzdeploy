@@ -409,29 +409,6 @@ if [ -x /sbin/lspci ] ; then
 fi
 }
 
-check_ovh ()
-# Tricks for OVH hosting
-{
-if [ -f /etc/sysconfig/mkinitrd/OVH ] && [ -h /sys/block/sda/device ] && [ "$OS_VERSION" -eq "5" ] ; then
-	devicepath=$(readlink /sys/block/sda/device)
-	if [ -f /sys/block/sda/$devicepath/../../../uevent ]; then
-	. /sys/block/sda/$devicepath/../../../uevent
-	if [ -n "$DRIVER" ] && ! grep  "${DRIVER}" /etc/modprobe.conf | grep -q scsi_hostadapter ; then
-        cat /etc/modprobe.conf | grep -v scsi_hostadapter > /root/modprobe.conf.$$
-        echo "alias scsi_hostadapter $DRIVER" >> /root/modprobe.conf.$$
-	mv /etc/modprobe.conf /etc/modprobe.conf.orig
-	mv /root/modprobe.conf.$$ /etc/modprobe.conf
-	cat /root/modprobe.conf.$$
-	fi
-	fi
-	rm -f /etc/sysconfig/mkinitrd/OVH
-	if [ -L /etc/mtab ] ; then
-	    rm /etc/mtab
-	    cp /proc/mounts /etc/mtab
-	fi
-fi
-}
-
 check_root ()
 # Root device link
 {
@@ -633,8 +610,6 @@ if [ "$skipversioncheck" = "false" ]; then
 
 fi
 
-# if [ "$OS_VERSION" = "7" ] && [ "$beta" = "false" ] ; then echo "\nPlease add \"--beta\" option to convert CentOS 7"; rm -f $lock; exit 1; fi
-
 if [ "$conversion" = "true" ] && [ "$uninstall" = "true" ] ; then echo "invalid combination"; rm -f $lock; exit 1; fi
 
 if [ "$conversion" = "false" ] && [ "$components" = "false" ] && [ "$uninstall" = "false" ] ; then
@@ -690,7 +665,6 @@ if [ "$conversion" = "true" ] ; then
 check_kernel_update_permission
 check_source
 
-check_ovh
 check_root
 yum clean all 2>&1 | tee -a $log
 
@@ -698,10 +672,6 @@ if rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r) > /dev/null 2>&1 ; t
     KERNEL=$(rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r))
 else
     KERNEL=kernel
-fi
-
-if [ "$OS_VERSION" -eq "5" ] && [ "$LINODE" = "true" ]; then
-    KERNEL=kernel-xen
 fi
 
 echo "kernel flavour $KERNEL" >> $log
