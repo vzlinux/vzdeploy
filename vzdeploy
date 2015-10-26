@@ -4,7 +4,7 @@
 # Short Description	:upgrades CentOS or RHEL distro to Virtuozzo Linux
 # Description      	:removes yum repo configuration related to CentOS/RHEL,
 #	  		as well as release related packages. Installs Virtuozzo Linux
-#		        release related packages, new kernel and lve tools
+#		        release related packages and new kernel
 ## vzdeploy INFO
 
 version="0.1"
@@ -192,7 +192,7 @@ check_kernel_update_permission()
 	fi
 
     if [ "$skipkmodcheck" = "false" ] ; then
-	if rpm -q --qf '%{name}\n' `rpm -qa | grep ^kmod\-` | grep -v -e lve -e iolimits -e aacraid -e megaraid_sas -e1000e -e r8168 -e microsoft -e igb -e libs -e ^kmod$; then
+	if rpm -q --qf '%{name}\n' `rpm -qa | grep ^kmod\-` | grep -v -e iolimits -e aacraid -e megaraid_sas -e1000e -e r8168 -e microsoft -e igb -e libs -e ^kmod$; then
 	    echo "You have third-party kernel module rpm installed (see line above)."
 	    echo "It's not compatible with Virtuozzo Linux kernel."
 	    echo "Please contact Virtuozzo Linux support at $helpdesk"
@@ -269,23 +269,6 @@ OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cu
 	echo "This script is for Version 6 or 7 only" | tee -a $log
 	rm -f $lock
 	exit 1;
-    elif [ -f /proc/vz/vestat ]; then
-	if [ ! -f /proc/lve/list ]; then
-	    echo "You are running inside VZ container, without LVE support." | tee -a $log
-	    rm -f $lock
-	    exit 1;
-        else
-	    if [ -c /dev/lve ]; then
-	        echo "You are running inside VZ container with LVE support." | tee -a $log
-	        vzlve=true
-	    else
-	        CTNUM=`cat /proc/vz/veinfo|tr -s ' '|cut -d' ' -f2`
-	        echo "LVE is disabled for this container. Please, ask your host to enable LVE on your container. They can do it by running:" | tee -a $log
-	        echo -e "vzctl set $CTNUM --devnodes lve:rw --save" | tee -a $log
-	        rm -f $lock
-	        exit 1;
-	    fi
-	fi
     fi;
 }
 
@@ -689,12 +672,11 @@ if [[ $uninstall == "true" ]]; then
 	rpm -ivh $CENTOS_RELEASE --force --nodeps 2>&1 | tee -a $log
 	yum -y install centos-release-notes 2>&1 | tee -a $log
 	rpm -e --nodeps cloudlinux-release 2>&1 | tee -a $log
-	rpm -e --nodeps pam_lve 2>&1 | tee -a $log
 	rpm -e --nodeps rhn-setup-gnome 2>&1 | tee -a $log
 	rpm -e rhn-client-tools rhn-check rhnsd rhn-setup rhnlib yum-rhn-plugin 2>&1 | tee -a $log
 	echo "You converted back to CentOS" | tee -a $log
 	echo "Now is the time to install kernel." | tee -a $log
-	echo -e "To delete Virtuozzo Linux kernel do \nrpm -e --nodeps $(rpm -qa | grep ^kernel | grep lve | tr -s '\n' ' ')"
+	echo -e "To delete Virtuozzo Linux kernel do \nrpm -e --nodeps $(rpm -qa | grep ^kernel | tr -s '\n' ' ')"
 	echo "To install new CentOS kernel once you deleted Virtuozzo Linux kernel, type yum install kernel" | tee -a $log
 	echo "If yum say that latest kernel is already installed - it\'s Ok" | tee -a $log
 	echo "Please check your bootloader configuration before rebooting the system" | tee -a $log
@@ -705,10 +687,8 @@ fi
 
 if [ "$conversion" = "true" ] ; then
 
-if [ "$vzlve" != "true" ]; then
-    check_kernel_update_permission
-    check_source
-fi
+check_kernel_update_permission
+check_source
 
 check_ovh
 check_root
@@ -726,7 +706,7 @@ fi
 
 echo "kernel flavour $KERNEL" >> $log
 
-PKGS="$KERNEL cloudlinux-release lve lve-utils liblve liblve-devel lve-stats pam_lve"
+PKGS="$KERNEL vzlinux-release"
 	if rpm -qa | grep -q kmod > /dev/null 2>&1 ; then
 	for kmod in `rpm -q --qf '%{name}\n' $(rpm -qa | grep ^kmod\-) | grep -v x86_64 | grep -v i686 | grep -e e1000e -e aacraid -e r8168 -e microsoft -e igb`; do
 	    rpm -e --justdb $kmod --nodeps
@@ -750,16 +730,6 @@ PKGS="$KERNEL cloudlinux-release lve lve-utils liblve liblve-devel lve-stats pam
 	    yum -y erase subscription-manager
 	fi
 
-	echo "Installing lve..." | tee -a $log
-
-	if [ "$OS_VERSION" = "5" ] && [ "$LINODE" = "true" ]; then
-	    cp /etc/modprobe.conf /etc/modprobe.conf.orig
-	    echo "alias scsi_hostadapter xenblk" > /etc/modprobe.conf
-	    echo "co:2345:respawn:/sbin/mingetty xvc0" >> /etc/inittab
-	    echo "xvc0"  >> /etc/securetty
-	    echo "UPDATEDEFAULT=yes" > /etc/sysconfig/kernel
-	    echo "DEFAULTKERNEL=kernel-xen" >> /etc/sysconfig/kernel
-	fi
         rpm -e --nodeps cpuspeed > /dev/null 2>&1
 	yum -y $ENABLED_REPOS --disableexcludes=main install $PKGS 2>&1 | tee -a $log
 	check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
@@ -787,17 +757,10 @@ fi
 
 if [ "$components" = "true" ] ; then
 	case $PANEL in 'cpanel'|'directadmin'|'ispmgr'|'plesk')
-	yum -y $ENABLED_REPOS install lvemanager 2>&1 | tee -a $log
-	check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
 	yum -y $ENABLED_REPOS update apr 2>&1 | tee -a $log
 	check_pipestatus 0 "Unable to update required packages, please contact Virtuozzo Linux support at $helpdesk"
 	esac
 fi
-
-if [ "$vzlve" = "true" ] ; then
-	yum -y $ENABLED_REPOS --enablerepo=cloudlinux-updates-testing install lve-utils cagefs | tee -a $log
-fi
-
 
 if [ "$hostinglimits" = "true" ] ; then
 
