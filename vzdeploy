@@ -30,6 +30,8 @@ init_vars()
    beta=false
    NO_ARGS=0
 
+   helpdesk="https://bugs.openvz.org"
+
    # Update checker URL
    checksite="http://repo.cloudlinux.com/cloudlinux/sources/cln/"
    checkfile="version.dat"
@@ -193,7 +195,7 @@ check_kernel_update_permission()
 	if rpm -q --qf '%{name}\n' `rpm -qa | grep ^kmod\-` | grep -v -e lve -e iolimits -e aacraid -e megaraid_sas -e1000e -e r8168 -e microsoft -e igb -e libs -e ^kmod$; then
 	    echo "You have third-party kernel module rpm installed (see line above)."
 	    echo "It's not compatible with CloudLinux kernel."
-	    echo "Please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+	    echo "Please contact Virtuozzo Linux support at $helpdesk"
 	    rm -f $lock
 	exit 1
 	fi
@@ -375,7 +377,7 @@ prep ()
     if [ -x /usr/local/sbin/les ]; then
     LES=true
     /usr/local/sbin/les -da 2>&1 | tee -a $log
-    check_pipestatus 0 "Unable to turn off LES, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+    check_pipestatus 0 "Unable to turn off LES, please contact Virtuozzo Linux support at $helpdesk"
     fi
 }
 
@@ -774,7 +776,7 @@ PKGS="$KERNEL cloudlinux-release lve lve-utils liblve liblve-devel lve-stats pam
 	fi
         rpm -e --nodeps cpuspeed > /dev/null 2>&1
 	yum -y $ENABLED_REPOS --disableexcludes=main install $PKGS 2>&1 | tee -a $log
-	check_pipestatus 0 "Unable to install required packages, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+	check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
 
 	if [ "$OS_VERSION" = "7" ] && [ "$LINODE_KVM" = "true" ]; then
 	    yum -y install grub2 2>&1 | tee -a $log
@@ -800,9 +802,9 @@ fi
 if [ "$components" = "true" ] ; then
 	case $PANEL in 'cpanel'|'directadmin'|'ispmgr'|'plesk')
 	yum -y $ENABLED_REPOS install lvemanager 2>&1 | tee -a $log
-	check_pipestatus 0 "Unable to install required packages, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+	check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
 	yum -y $ENABLED_REPOS update apr 2>&1 | tee -a $log
-	check_pipestatus 0 "Unable to update required packages, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+	check_pipestatus 0 "Unable to update required packages, please contact Virtuozzo Linux support at $helpdesk"
 	esac
 fi
 
@@ -816,7 +818,7 @@ if [ "$hostinglimits" = "true" ] ; then
 	if [ "$PANEL" = "ispmanager" ] || [ "$PANEL" = "interworx" ] ; then
 	    echo "Installing mod_hostinglimits" 2>&1 | tee -a $log
 	    yum -y install mod_hostinglimits 2>&1 | tee -a $log
-	    check_pipestatus 0 "mod_hostinglimits install failed, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+	    check_pipestatus 0 "mod_hostinglimits install failed, please contact Virtuozzo Linux support at $helpdesk"
 	fi
 
 	if [ "$PANEL" = "plesk" ] ; then
@@ -830,16 +832,16 @@ if [ "$hostinglimits" = "true" ] ; then
 	  fi
 	    echo "Installing mod_hostinglimits" 2>&1 | tee -a $log
 	    yum -y install mod_hostinglimits 2>&1 | tee -a $log
-	    check_pipestatus 0 "mod_hostinglimits install failed, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+	    check_pipestatus 0 "mod_hostinglimits install failed, please contact Virtuozzo Linux support at $helpdesk"
 	    echo "Installing MySQL-python" 2>&1 | tee -a $log
 	    yum -y install MySQL-python 2>&1 | tee -a $log
-	    check_pipestatus 0 "MySQL-python install failed, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+	    check_pipestatus 0 "MySQL-python install failed, please contact Virtuozzo Linux support at $helpdesk"
 	fi
 
 	if [ "$PANEL" = "cpanel" ] && [ "$buildeasyapache" = "true" ]; then
 	    echo "EasyApache build enabled, building..."
 	    /scripts/easyapache --build 2>&1 | tee -a $log
-	    check_pipestatus 0 "EasyApache build failed, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+	    check_pipestatus 0 "EasyApache build failed, please contact Virtuozzo Linux support at $helpdesk"
 	    echo "EasyApache build succeeded" 2>&1 | tee -a $log
         fi
 
@@ -850,9 +852,9 @@ if [ "$hostinglimits" = "true" ] ; then
 	    echo "Apache build enabled, building..." 2>&1 | tee -a $log
 	    if [ -f /usr/local/directadmin/custombuild/build ] ; then
 		/usr/local/directadmin/custombuild/build set cloudlinux yes 2>&1 | tee -a $log
-		check_pipestatus 0 "Command failed, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+		check_pipestatus 0 "Command failed, please contact Virtuozzo Linux support at $helpdesk"
 		/usr/local/directadmin/custombuild/build apache
-		check_pipestatus 0 "Apache build failed, please contact CloudLinux support at https://helpdesk.cloudlinux.com"
+		check_pipestatus 0 "Apache build failed, please contact Virtuozzo Linux support at $helpdesk"
 		echo "Apache build succeeded" 2>&1 | tee -a $log
 	    fi
         fi
