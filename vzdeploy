@@ -18,13 +18,9 @@ init_vars()
    wget_options="-q"
    kexec=false
    uninstall=false
-   buildeasyapache=true
    builddirectadmin=true
    regen_modprobe_conf=false
-   components=false
-   conversion=false
-   hostinglimits=false
-   conversiononly=false
+   conversion=true
    skipkmodcheck=false
    skipversioncheck=false
    beta=false
@@ -344,47 +340,10 @@ prep ()
     rpm -Uvh $VIRTUOZZO_RELEASE $VIRTUOZZO_LOGOS --force >> $log 2>&1 ;
     # Handle LES
     if [ -x /usr/local/sbin/les ]; then
-    LES=true
-    /usr/local/sbin/les -da 2>&1 | tee -a $log
-    check_pipestatus 0 "Unable to turn off LES, please contact Virtuozzo Linux support at $helpdesk"
+        LES=true
+        /usr/local/sbin/les -da 2>&1 | tee -a $log
+        check_pipestatus 0 "Unable to turn off LES, please contact Virtuozzo Linux support at $helpdesk"
     fi
-}
-
-check_panel ()
-{
-PANEL=""
-ROOT_PLESK_DIR="/usr/local/psa/admin/"
-ROOT_CPANEL_DIR="/usr/local/cpanel/whostmgr/docroot/"
-ROOT_IWORX_DIR="/usr/local/interworx/"
-ROOT_ISPMGR_DIR="/usr/local/ispmgr/"
-ROOT_DA_DIR="/usr/local/directadmin/"
-
-if [ -d $ROOT_PLESK_DIR ]; then PANEL="plesk"; fi
-if [ -d $ROOT_IWORX_DIR ]; then PANEL="interworx"; fi
-if [ -d $ROOT_CPANEL_DIR ]; then PANEL="cpanel"; fi
-if [ -d $ROOT_ISPMGR_DIR ]; then PANEL="ispmgr"; fi
-if [ -d $ROOT_DA_DIR ]; then PANEL="directadmin"; fi
-
-if [ "$PANEL" != "" ] && [ "$PANEL"="cpanel" ] && [ -x /usr/local/cpanel/cpanel ] ; then
-    CPANEL_MAJOR=`/usr/local/cpanel/cpanel -V | cut -f 1 -d "."`
-    CPANEL_MINOR=`/usr/local/cpanel/cpanel -V | cut -f 2 -d "."`
-	if [ $CPANEL_MAJOR -eq 11 ] && [ $CPANEL_MINOR -lt 30 ]; then
-	CPANEL_OLD=YES
-	else
-	CPANEL_OLD=NO
-	fi
-fi
-
-if [ "$PANEL" != "" ] && [ "$PANEL"="plesk" ] && [ -f  /usr/local/psa/version ] ; then
-    PLESK_MAJOR=`cut -f 1 -d "." /usr/local/psa/version`
-    PLESK_MINOR=`cut -f 2 -d "." /usr/local/psa/version`
-        if [ $PLESK_MAJOR -eq 11 ] && [ $PLESK_MINOR -lt 5 ]; then
-        PLESK_OLD=YES
-        else
-        PLESK_OLD=NO
-        fi
-fi
-
 }
 
 check_cloudlinux_repos ()
@@ -438,9 +397,6 @@ Usage:
 
   -h, --help            Print this message
   -c, --uninstall	Convert Virtuozzo Linux back to CentOS
-  --components-only     Install control panel components only
-  --conversion-only	Do not install control panel components after converting
-  --hostinglimits	Install mod_hostinglimits rpm
   --skip-kmod-check	Skip check for unsupported kmods
   --skip-version-check  Do not check for script updates
 EOF
@@ -541,7 +497,7 @@ fi
 echo $$ > $lock
 check_exit_code 0 "Please run $scriptname as root"
 
-options=`getopt -o ecmik: -l uninstall,buildeasyapache,regenmodprobeconf,components-only,conversion-only,hostinglimits,skip-kmod-check,help,skip-version-check,beta: -- "$@"`
+options=`getopt -o ecmik: -l uninstall,regenmodprobeconf,skip-kmod-check,help,skip-version-check,beta: -- "$@"`
 
 if [ $? != 0 ] ; then print_help ; rm -f $lock; exit 1 ; fi
 
@@ -558,24 +514,8 @@ while true; do
 	uninstall=true
 	shift
 	;;
-    -e|--buildeasyapache)
-	buildeasyapache=true
-	shift
-	;;
     -m|--regenmodprobeconf)
 	regen_modprobe_conf=true
-	shift
-	;;
-    --components-only)
-	components=true
-	shift
-	;;
-    --conversion-only)
-	conversiononly=true
-	shift
-	;;
-    --hostinglimits)
-	hostinglimits=true
 	shift
 	;;
     --skip-kmod-check)
@@ -610,39 +550,7 @@ if [ "$skipversioncheck" = "false" ]; then
 
 fi
 
-if [ "$conversion" = "true" ] && [ "$uninstall" = "true" ] ; then echo "invalid combination"; rm -f $lock; exit 1; fi
-
-if [ "$conversion" = "false" ] && [ "$components" = "false" ] && [ "$uninstall" = "false" ] ; then
-   echo "Nothing to do, please select an option"
-   rm -f $lock
-   exit 1
-fi
-
-if [ "$conversion" = "true" ] && [ "$conversiononly" = "false" ] && [ "$components" = "false" ] ; then
-
-components=true
-
-fi
-
-if [ "$components" = "true" ] ; then hostinglimits=true; fi
-
-# echo conversion=$conversion
-# echo components=$components
-
-check_panel
-
 if [[ $uninstall == "true" ]]; then
-	if [ -f /usr/sbin/cagefsctl ] ; then
-    	  echo "cagefs found, erasing" 2>&1 | tee -a $log
-          /usr/sbin/cagefsctl --remove-all
-          yum -y erase cagefs cagefs-safebin bsock bsock-libs 2>&1 | tee -a $log
-	fi
-
-	if ls /opt/alt/php*/usr/bin/php > /dev/null 2>&1 ; then
-	  echo "alt-php installed, erasing" 2>&1 | tee -a $log
-          yum -y groupremove alt-php 2>&1 | tee -a $log
-	fi
-
 	rpm --import http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-5 2>&1 | tee -a $log
 	rpm -ivh $CENTOS_RELEASE --force --nodeps 2>&1 | tee -a $log
 	yum -y install centos-release-notes 2>&1 | tee -a $log
@@ -724,60 +632,6 @@ EOF
 
 fi
 
-
-if [ "$components" = "true" ] ; then
-	case $PANEL in 'cpanel'|'directadmin'|'ispmgr'|'plesk')
-	yum -y $ENABLED_REPOS update apr 2>&1 | tee -a $log
-	check_pipestatus 0 "Unable to update required packages, please contact Virtuozzo Linux support at $helpdesk"
-	esac
-fi
-
-if [ "$hostinglimits" = "true" ] ; then
-
-	if [ "$PANEL" = "ispmanager" ] || [ "$PANEL" = "interworx" ] ; then
-	    echo "Installing mod_hostinglimits" 2>&1 | tee -a $log
-	    yum -y install mod_hostinglimits 2>&1 | tee -a $log
-	    check_pipestatus 0 "mod_hostinglimits install failed, please contact Virtuozzo Linux support at $helpdesk"
-	fi
-
-	if [ "$PANEL" = "plesk" ] ; then
-	  if [ "$PLESK_OLD" = "YES" ] ; then
-	    if rpm -q psa-mod_fcgid 2>&1 > /dev/null; then
-		echo "Replacing mod_fcgid..." 2>&1 | tee -a $log
-		rpm -e --nodeps psa-mod-fcgid-configurator 2>&1 | tee -a $log
-		rpm -e --nodeps psa-mod_fcgid 2>&1 | tee -a $log
-		yum -y install mod_fcgid 2>&1 | tee -a $log
-	    fi
-	  fi
-	    echo "Installing mod_hostinglimits" 2>&1 | tee -a $log
-	    yum -y install mod_hostinglimits 2>&1 | tee -a $log
-	    check_pipestatus 0 "mod_hostinglimits install failed, please contact Virtuozzo Linux support at $helpdesk"
-	    echo "Installing MySQL-python" 2>&1 | tee -a $log
-	    yum -y install MySQL-python 2>&1 | tee -a $log
-	    check_pipestatus 0 "MySQL-python install failed, please contact Virtuozzo Linux support at $helpdesk"
-	fi
-
-	if [ "$PANEL" = "cpanel" ] && [ "$buildeasyapache" = "true" ]; then
-	    echo "EasyApache build enabled, building..."
-	    /scripts/easyapache --build 2>&1 | tee -a $log
-	    check_pipestatus 0 "EasyApache build failed, please contact Virtuozzo Linux support at $helpdesk"
-	    echo "EasyApache build succeeded" 2>&1 | tee -a $log
-        fi
-
-        if [ "$PANEL" = "directadmin" ] && [ "$builddirectadmin" = "true" ]; then
-	    echo "Adding admin user to wheel group..." 2>&1 | tee -a $log
-	    da_admin_user=$(/usr/bin/cldetect --print-da-admin)
-	    /usr/sbin/usermod -a -G wheel $da_admin_user 2>&1 | tee -a $log
-	    echo "Apache build enabled, building..." 2>&1 | tee -a $log
-	    if [ -f /usr/local/directadmin/custombuild/build ] ; then
-		/usr/local/directadmin/custombuild/build set cloudlinux yes 2>&1 | tee -a $log
-		check_pipestatus 0 "Command failed, please contact Virtuozzo Linux support at $helpdesk"
-		/usr/local/directadmin/custombuild/build apache
-		check_pipestatus 0 "Apache build failed, please contact Virtuozzo Linux support at $helpdesk"
-		echo "Apache build succeeded" 2>&1 | tee -a $log
-	    fi
-        fi
-fi
 
 add_digitalocean_kexec
 
