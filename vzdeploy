@@ -243,12 +243,12 @@ fi
 OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cut -c 1)"
     if [ "$OS_VERSION" -eq "6" ]; then
     KERNEL_VERSION=2.6.32
-    VIRTUOZZO_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/6/${ARCH}/cloudlinux6-release-current.${CPU}.rpm
-    VIRTUOZZO_LOGOS=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/6/i386/redhat-logos-60.0.14-1.el6.cloudlinux.noarch.rpm
+    VIRTUOZZO_RELEASE=http://kojistorage.eng.sw.ru/mash/dist-vz6/latest/${ARCH}/os/Packages/v/vzlinux-release-6.7.0-3.vz6.${CPU}.rpm
+    VIRTUOZZO_LOGOS=http://kojistorage.eng.sw.ru/mash/dist-vz6/latest/${ARCH}/os/Packages/r/redhat-logos-60.0.14-13.vz6.1.noarch.rpm
     elif [ "$OS_VERSION" -eq "7" ]; then
     KERNEL_VERSION=3.10.0
-    VIRTUOZZO_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/7/${ARCH}/cloudlinux7-release-current.${CPU}.rpm
-    VIRTUOZZO_LOGOS=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/7/${ARCH}/cloudlinux-logos-70.0.3-5.el7.noarch.rpm
+    VIRTUOZZO_RELEASE=http://kojistorage.eng.sw.ru/mash/dist-vl7/latest/${ARCH}/os/Packages/v/vzlinux-release-7.1.0-12.vl7.${CPU}.rpm
+    VIRTUOZZO_LOGOS=http://kojistorage.eng.sw.ru/mash/dist-vl7/latest/${ARCH}/os/Packages/v/virtuozzo-logos-70.0.5-2.vl7.noarch.rpm
     fi
     if [ "$OS_VERSION" != 6 ] && [ "$OS_VERSION" != 7 ]; then
 	echo "This script is for Version 6 or 7 only" | tee -a $log
