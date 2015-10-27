@@ -9,6 +9,7 @@
 
 version="0.1"
 
+
 init_vars()
 {
 log=/var/log/vzdeploy.log
@@ -42,6 +43,7 @@ esac
 check_exit_code()  { if [ $? -ne $1 ]; then echo $2; rm -f $lock; exit 1; fi; }
 check_pipestatus()   { if [ $PIPESTATUS -ne $1 ]; then echo $2; rm -f $lock; exit 1; fi; }
 
+
 yesno()
 # $1 = Message prompt
 # Returns ans=0 for no, ans=1 for yes
@@ -63,6 +65,7 @@ while [ $ans -eq 2 ]; do
     esac
 done
 }
+
 
 download_file()
 # $1 = Full URL to download
@@ -101,6 +104,7 @@ if [ ! -s "$dlbase" ]; then
     fi
 fi
 }
+
 
 check_version()
 # Make sure that we are running the latest version
@@ -198,6 +202,7 @@ if uname -r | grep -v  $KERNEL_VERSION ; then
 fi
 }
 
+
 check_yum()
 {
 if [ ! -n "$(cat /etc/yum.conf | sed -e 's/ //g' | grep -i ^"plugins=1")" ]; then
@@ -207,6 +212,7 @@ if [ ! -n "$(cat /etc/yum.conf | sed -e 's/ //g' | grep -i ^"plugins=1")" ]; the
     exit 1;
 fi;
 }
+
 
 check_release()
 {
@@ -240,20 +246,35 @@ if [ "$OS_VERSION" != 6 ] && [ "$OS_VERSION" != 7 ]; then
 fi;
 }
 
+
 backup()
 {
 BACKUP=/etc/virtuozzo-convert-saved
 mkdir -p $BACKUP
 cp /etc/redhat-release $BACKUP 2>&1 | tee -a $log
-# Disable RedHat
 
+# Disable RedHat
 if [ -f /etc/yum.repos.d/RedHat-Base.repo ]; then
     mv /etc/yum.repos.d/RedHat-Base.repo $BACKUP >> $log 2>&1 #test if that is the rate path
 fi
-yum -y erase rhnlib >> $log 2>&1
-yum -y erase subscription-manager >> $log 2>&1
-rpm -e --nodeps redhat-release-notes redhat-release redhat-logos 2> /dev/null
-rpm -e --nodeps redhat-release-server >> $log 2>&1
+if rpm -q rhnlib > /dev/null; then
+    yum -y erase rhnlib >> $log 2>&1
+fi
+if rpm -q subscription-manager > /dev/null; then
+    yum -y erase subscription-manager >> $log 2>&1
+fi
+if rpm -q redhat-logos > /dev/null; then
+    rpm -e --nodeps redhat-logos >> $log 2>&1
+fi
+if rpm -q redhat-release > /dev/null; then
+    rpm -e --nodeps redhat-release >> $log 2>&1
+fi
+if rpm -q redhat-release-notes > /dev/null; then
+    rpm -e --nodeps redhat-release-notes >> $log 2>&1
+fi
+if rpm -q redhat-release-server > /dev/null; then
+    rpm -e --nodeps redhat-release-server >> $log 2>&1
+fi
 if [ -f /etc/sysconfig/rhn/systemid ]; then
     mv /etc/sysconfig/rhn/systemid $BACKUP >> $log 2>&1
 fi
@@ -268,7 +289,12 @@ fi
 if [ -f /etc/yum.repos.d/CentOS-Base.repo ]; then
     mv /etc/yum.repos.d/CentOS-Base.repo $BACKUP >> $log 2>&1
 fi
-rpm -e --nodeps centos-release centos-release-notes redhat-logos >> $log 2>&1
+if rpm -q centos-release > /dev/null; then
+    rpm -e --nodeps centos-release >> $log 2>&1
+fi
+if rpm -q centos-release-notes > /dev/null; then
+    rpm -e --nodeps centos-release-notes >> $log 2>&1
+fi
 
 # Disable Scientific Linux
 if [ -f /etc/yum.repos.d/sl.repo ]; then
@@ -277,8 +303,14 @@ fi
 if [ -f /etc/yum.repos.d/cd.repo ]; then
     mv /etc/yum.repos.d/cd.repo $BACKUP >> $log 2>&1
 fi
-rpm -e --nodeps sl-release sl-release-notes redhat-logos >> $log 2>&1;
+if rpm -q sl-release > /dev/null; then
+    rpm -e --nodeps sl-release >> $log 2>&1;
+fi
+if rpm -q sl-release-notes > /dev/null; then
+    rpm -e --nodeps sl-release-notes >> $log 2>&1;
+fi
 }
+
 
 prep()
 {
@@ -293,6 +325,7 @@ if [ -x /usr/local/sbin/les ]; then
 fi
 }
 
+
 check_source()
 # We need to install kernel-devel for virtual containers
 {
@@ -306,6 +339,7 @@ if [ -x /sbin/lspci ] ; then
     fi
 fi
 }
+
 
 check_root()
 # Root device link
