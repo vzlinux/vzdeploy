@@ -246,22 +246,37 @@ BACKUP=/etc/virtuozzo-convert-saved
 mkdir -p $BACKUP
 cp /etc/redhat-release $BACKUP 2>&1 | tee -a $log
 # Disable RedHat
-mv /etc/yum.repos.d/RedHat-Base.repo $BACKUP  >> $log 2>&1 #test if that is the rate path
+
+if [ -f /etc/yum.repos.d/RedHat-Base.repo ]; then
+    mv /etc/yum.repos.d/RedHat-Base.repo $BACKUP >> $log 2>&1 #test if that is the rate path
+fi
 yum -y erase rhnlib >> $log 2>&1
 yum -y erase subscription-manager >> $log 2>&1
 rpm -e --nodeps redhat-release-notes redhat-release redhat-logos 2> /dev/null
-rpm -e --nodeps redhat-release-server  >> $log 2>&1
-if [ -f /etc/sysconfig/rhn/systemid ]; then mv /etc/sysconfig/rhn/systemid $BACKUP  >> $log 2>&1; fi
-if [ -f /etc/yum/pluginconf.d/rhnplugin.conf ]; then mv /etc/yum/pluginconf.d/rhnplugin.conf $BACKUP  >> $log 2>&1 ; fi
+rpm -e --nodeps redhat-release-server >> $log 2>&1
+if [ -f /etc/sysconfig/rhn/systemid ]; then
+    mv /etc/sysconfig/rhn/systemid $BACKUP >> $log 2>&1
+fi
+if [ -f /etc/yum/pluginconf.d/rhnplugin.conf ]; then
+    mv /etc/yum/pluginconf.d/rhnplugin.conf $BACKUP >> $log 2>&1
+fi
 
 # Disable CentOS
-mv /etc/yum.repos.d/CentOS-Media.repo $BACKUP >> $log 2>&1
-mv /etc/yum.repos.d/CentOS-Base.repo $BACKUP >> $log 2>&1
-rpm -e --nodeps centos-release centos-release-notes redhat-logos  >> $log 2>&1
+if [ -f /etc/yum.repos.d/CentOS-Media.repo ]; then
+    mv /etc/yum.repos.d/CentOS-Media.repo $BACKUP >> $log 2>&1
+fi
+if [ -f /etc/yum.repos.d/CentOS-Base.repo ]; then
+    mv /etc/yum.repos.d/CentOS-Base.repo $BACKUP >> $log 2>&1
+fi
+rpm -e --nodeps centos-release centos-release-notes redhat-logos >> $log 2>&1
 
 # Disable Scientific Linux
-mv /etc/yum.repos.d/sl.repo $BACKUP >> $log 2>&1
-mv /etc/yum.repos.d/cd.repo $BACKUP >> $log 2>&1
+if [ -f /etc/yum.repos.d/sl.repo ]; then
+    mv /etc/yum.repos.d/sl.repo $BACKUP >> $log 2>&1
+fi
+if [ -f /etc/yum.repos.d/cd.repo ]; then
+    mv /etc/yum.repos.d/cd.repo $BACKUP >> $log 2>&1
+fi
 rpm -e --nodeps sl-release sl-release-notes redhat-logos >> $log 2>&1;
 }
 
