@@ -17,7 +17,6 @@ init_vars()
    wget="/usr/bin/wget"
    wget_options="-q"
    kexec=false
-   uninstall=false
    builddirectadmin=true
    regen_modprobe_conf=false
    conversion=true
@@ -246,12 +245,10 @@ OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cu
     KERNEL_VERSION=2.6.32
     VIRTUOZZO_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/6/${ARCH}/cloudlinux6-release-current.${CPU}.rpm
     VIRTUOZZO_LOGOS=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/6/i386/redhat-logos-60.0.14-1.el6.cloudlinux.noarch.rpm
-    CENTOS_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/centos/6/${ARCH}/centos6-release-current.${CPU}.rpm
     elif [ "$OS_VERSION" -eq "7" ]; then
     KERNEL_VERSION=3.10.0
     VIRTUOZZO_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/7/${ARCH}/cloudlinux7-release-current.${CPU}.rpm
     VIRTUOZZO_LOGOS=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/cloudlinux/7/${ARCH}/cloudlinux-logos-70.0.3-5.el7.noarch.rpm
-    CENTOS_RELEASE=http://repo.cloudlinux.com/cloudlinux/migrate/release-files/centos/7/${ARCH}/centos6-release-current.${CPU}.rpm
     fi
     if [ "$OS_VERSION" != 6 ] && [ "$OS_VERSION" != 7 ]; then
 	echo "This script is for Version 6 or 7 only" | tee -a $log
@@ -347,7 +344,6 @@ print_help ()
 Usage:
 
   -h, --help            Print this message
-  -c, --uninstall	Convert Virtuozzo Linux back to CentOS
   --skip-kmod-check	Skip check for unsupported kmods
   --skip-version-check  Do not check for script updates
 EOF
@@ -369,7 +365,7 @@ fi
 echo $$ > $lock
 check_exit_code 0 "Please run $scriptname as root"
 
-options=`getopt -o ecmik: -l uninstall,regenmodprobeconf,skip-kmod-check,help,skip-version-check,beta: -- "$@"`
+options=`getopt -o ecmik: -l regenmodprobeconf,skip-kmod-check,help,skip-version-check,beta: -- "$@"`
 
 if [ $? != 0 ] ; then print_help ; rm -f $lock; exit 1 ; fi
 
@@ -381,10 +377,6 @@ while true; do
 	print_help
 	rm -f $lock
 	exit 0
-	;;
-    -c|--uninstall)
-	uninstall=true
-	shift
 	;;
     -m|--regenmodprobeconf)
 	regen_modprobe_conf=true
@@ -422,23 +414,6 @@ if [ "$skipversioncheck" = "false" ]; then
 
 fi
 
-if [[ $uninstall == "true" ]]; then
-	rpm --import http://mirror.centos.org/centos/RPM-GPG-KEY-CentOS-5 2>&1 | tee -a $log
-	rpm -ivh $CENTOS_RELEASE --force --nodeps 2>&1 | tee -a $log
-	yum -y install centos-release-notes 2>&1 | tee -a $log
-	rpm -e --nodeps cloudlinux-release 2>&1 | tee -a $log
-	rpm -e --nodeps rhn-setup-gnome 2>&1 | tee -a $log
-	rpm -e rhn-client-tools rhn-check rhnsd rhn-setup rhnlib yum-rhn-plugin 2>&1 | tee -a $log
-	echo "You converted back to CentOS" | tee -a $log
-	echo "Now is the time to install kernel." | tee -a $log
-	echo -e "To delete Virtuozzo Linux kernel do \nrpm -e --nodeps $(rpm -qa | grep ^kernel | tr -s '\n' ' ')"
-	echo "To install new CentOS kernel once you deleted Virtuozzo Linux kernel, type yum install kernel" | tee -a $log
-	echo "If yum say that latest kernel is already installed - it\'s Ok" | tee -a $log
-	echo "Please check your bootloader configuration before rebooting the system" | tee -a $log
-	rm -f $lock
-	exit 0
-fi
-
 
 if [ "$conversion" = "true" ] ; then
 
@@ -457,7 +432,7 @@ fi
 echo "kernel flavour $KERNEL" >> $log
 
 PKGS="$KERNEL vzlinux-release"
-	if rpm -qa | grep -q kmod > /dev/null 2>&1 ; then
+if rpm -qa | grep -q kmod > /dev/null 2>&1 ; then
 	for kmod in `rpm -q --qf '%{name}\n' $(rpm -qa | grep ^kmod\-) | grep -v x86_64 | grep -v i686 | grep -e e1000e -e aacraid -e r8168 -e microsoft -e igb`; do
 	    rpm -e --justdb $kmod --nodeps
 	    PKGS="$PKGS $kmod"
