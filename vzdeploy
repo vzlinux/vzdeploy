@@ -16,8 +16,6 @@ lock=/var/lock/vzdeploy.lck
 
 wget="/usr/bin/wget"
 wget_options="-q"
-kexec=false
-builddirectadmin=true
 conversion=true
 skipkmodcheck=false
 skipversioncheck=true
