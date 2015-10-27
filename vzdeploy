@@ -200,7 +200,7 @@ if uname -r | grep -v  $KERNEL_VERSION ; then
 fi
 }
 
-check_yum ()
+check_yum()
 {
 if [ ! -n "$(cat /etc/yum.conf | sed -e 's/ //g' | grep -i ^"plugins=1")" ]; then
     echo "Yum error: Plugins are disabled" | tee -a $log
@@ -210,7 +210,7 @@ if [ ! -n "$(cat /etc/yum.conf | sed -e 's/ //g' | grep -i ^"plugins=1")" ]; the
 fi;
 }
 
-check_release ()
+check_release()
 {
 rpm -q --whatprovides redhat-release > /dev/null 2>&1
 check_exit_code 0 "There is no package providing /etc/redhat-release, please install redhat-release or centos-release first"
@@ -242,7 +242,7 @@ if [ "$OS_VERSION" != 6 ] && [ "$OS_VERSION" != 7 ]; then
 fi;
 }
 
-backup ()
+backup()
 {
 BACKUP=/etc/virtuozzo-convert-saved
 mkdir -p $BACKUP
@@ -267,7 +267,7 @@ mv /etc/yum.repos.d/cd.repo $BACKUP >> $log 2>&1
 rpm -e --nodeps sl-release sl-release-notes redhat-logos >> $log 2>&1;
 }
 
-prep ()
+prep()
 {
 yum clean all 2>&1 | tee -a $log
 rpm --import http://repo.cloudlinux.com/cloudlinux/security/RPM-GPG-KEY-CloudLinux  >> $log 2>&1
@@ -280,7 +280,7 @@ if [ -x /usr/local/sbin/les ]; then
 fi
 }
 
-check_source ()
+check_source()
 # We need to install kernel-devel for virtual containers
 {
 NEED_SOURCE="NO"
@@ -294,7 +294,7 @@ if [ -x /sbin/lspci ] ; then
 fi
 }
 
-check_root ()
+check_root()
 # Root device link
 {
 if [ ! -e /dev/root ]; then
@@ -305,7 +305,7 @@ fi
 }
 
 
-check_efi() 
+check_efi()
 {
 if [ -f /boot/efi/EFI/redhat/grub.conf ] ; then
     if [ "$(readlink /etc/grub.conf)" != "/boot/efi/EFI/redhat/grub.conf" ] || [ "$(readlink /boot/grub/grub.conf)" != "/boot/efi/EFI/redhat/grub.conf" ]; then
@@ -316,7 +316,7 @@ fi
 }
 
 
-print_help ()
+print_help()
 {
     cat << EOF >&2
 Usage:
@@ -332,7 +332,6 @@ EOF
 init_vars $0
 check_release
 check_yum
-check_source
 
 if [ -f $lock ] ; then
     if [ -d /proc/$(cat $lock) ] ; then
@@ -383,8 +382,9 @@ if [ "$skipversioncheck" = "false" ]; then
     check_version
 fi
 
-
 if [ "$conversion" = "true" ] ; then
+    backup
+    prep
     check_kernel_update_permission
     check_source
     check_root
