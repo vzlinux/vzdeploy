@@ -11,62 +11,59 @@ version="0.1"
 
 init_vars()
 {
-   log=/var/log/vzdeploy.log
-   lock=/var/lock/vzdeploy.lck
+log=/var/log/vzdeploy.log
+lock=/var/lock/vzdeploy.lck
 
-   wget="/usr/bin/wget"
-   wget_options="-q"
-   kexec=false
-   builddirectadmin=true
-   conversion=true
-   skipkmodcheck=false
-   skipversioncheck=false
-   NO_ARGS=0
+wget="/usr/bin/wget"
+wget_options="-q"
+kexec=false
+builddirectadmin=true
+conversion=true
+skipkmodcheck=false
+skipversioncheck=false
+NO_ARGS=0
 
-   helpdesk="https://bugs.openvz.org"
+helpdesk="https://bugs.openvz.org"
 
-   # Update checker URL
-   checksite="http://repo.cloudlinux.com/cloudlinux/sources/cln/"
-   checkfile="version.dat"
-   checkurl="$checksite$checkfile"
-   scriptname="vzdeploy"
-   upgradeurl="$checksite$scriptname"
-   script="vzdeploy"
-   dry_run="0"
-   script="$1"
-      case "$script" in
-       ./*) script="`pwd`/`basename $script`" ;;
-        /*) script="$script" ;;
-         *) script="`pwd`/$script" ;;
-      esac
+# Update checker URL
+checksite="http://repo.cloudlinux.com/cloudlinux/sources/cln/"
+checkfile="version.dat"
+checkurl="$checksite$checkfile"
+scriptname="vzdeploy"
+upgradeurl="$checksite$scriptname"
+script="vzdeploy"
+dry_run="0"
+script="$1"
+case "$script" in
+    ./*) script="`pwd`/`basename $script`" ;;
+    /*) script="$script" ;;
+    *) script="`pwd`/$script" ;;
+esac
 }
 
 check_exit_code()  { if [ $? -ne $1 ]; then echo $2; rm -f $lock; exit 1; fi; }
 check_pipestatus()   { if [ $PIPESTATUS -ne $1 ]; then echo $2; rm -f $lock; exit 1; fi; }
 
-
 yesno()
 # $1 = Message prompt
 # Returns ans=0 for no, ans=1 for yes
 {
-   if [ $dry_run -eq 1 ]
-   then
-      echo "Would be asked here if you wanted to"
-      echo "$1 (y/n - y is assumed)"
-      ans=1
-   else
-      ans=2
-   fi
+if [ $dry_run -eq 1 ]; then
+    echo "Would be asked here if you wanted to"
+    echo "$1 (y/n - y is assumed)"
+    ans=1
+else
+    ans=2
+fi
 
-   while [ $ans -eq 2 ]
-   do
-      echo -n "Do you want to $1 (y/n) ?" ; read reply
-      case "$reply" in
-      Y*|y*) ans=1 ;;
-      N*|n*) ans=0 ;;
-          *) echo "Please answer y or n" ;;
-      esac
-   done
+while [ $ans -eq 2 ]; do
+    echo -n "Do you want to $1 (y/n) ?" ; read reply
+    case "$reply" in
+        Y*|y*) ans=1 ;;
+        N*|n*) ans=0 ;;
+        *) echo "Please answer y or n" ;;
+    esac
+done
 }
 
 download_file()
@@ -74,154 +71,143 @@ download_file()
 # $2 = Optional basename to save to (if omitted, then = basename $1)
 #      Also allow download to fail without exit if $2 is set
 {
-   if [ "$2" = "" ]
-   then
-      dlbase="`basename \"$1\"`"
-   else
-      dlbase="$2"
-   fi
+if [ "$2" = "" ]; then
+    dlbase="`basename \"$1\"`"
+else
+    dlbase="$2"
+fi
 
-   if [ $dry_run -eq 1 ]
-   then
-      echo "Would download this URL to $tmp_tree/$dlbase :"
-      echo $1 ; echo
-      return
-   fi
+if [ $dry_run -eq 1 ]; then
+    echo "Would download this URL to $tmp_tree/$dlbase :"
+    echo $1 ; echo
+    return
+fi
 
-   old_dlbase="$dlbase.old"
-   if [ -f "$dlbase" ]
-   then
-      rm -f "$old_dlbase"
-      mv -f "$dlbase" "$old_dlbase"
-   fi
+old_dlbase="$dlbase.old"
+if [ -f "$dlbase" ]; then
+    rm -f "$old_dlbase"
+    mv -f "$dlbase" "$old_dlbase"
+fi
 
-   echo "Downloading $dlbase (please wait)"
-   $wget $wget_options -O "$dlbase" "$1"
+echo "Downloading $dlbase (please wait)"
+$wget $wget_options -O "$dlbase" "$1"
 
-   if [ ! -s "$dlbase" ]
-   then
-      if [ -f "$old_dlbase" ]
-      then
-         mv -f "$old_dlbase" "$dlbase"
-      fi
-      if [ "$2" = "" ]
-      then
-         echo "Failed to download $dlbase"
-         rm -f $lock
-         exit 1
-      fi
-   fi
+if [ ! -s "$dlbase" ]; then
+    if [ -f "$old_dlbase" ]; then
+        mv -f "$old_dlbase" "$dlbase"
+    fi
+    if [ "$2" = "" ]; then
+        echo "Failed to download $dlbase"
+        rm -f $lock
+        exit 1
+    fi
+fi
 }
 
 check_version()
 # Make sure that we are running the latest version
 # $* = Params passed to script
 {
-   echo "Checking for an update to $scriptname"
-   download_file "$checkurl"
+echo "Checking for an update to $scriptname"
+download_file "$checkurl"
 
-   if [ $dry_run -eq 1 ]
-   then
-      echo "Would check if this running script (version $version) is out of date."
-      echo "If it's been superseded, the new version would be downloaded and you'd be asked"
-      echo "if you want to upgrade to it and run the new version."
-      echo
-      return
-   fi
+if [ $dry_run -eq 1 ]; then
+    echo "Would check if this running script (version $version) is out of date."
+    echo "If it's been superseded, the new version would be downloaded and you'd be asked"
+    echo "if you want to upgrade to it and run the new version."
+    echo
+    return
+fi
 
-   newversion="`cat \"$checkfile\"`"
-   newversion="`echo $newversion`"
-   rm -f "$checkfile"
+newversion="`cat \"$checkfile\"`"
+newversion="`echo $newversion`"
+rm -f "$checkfile"
 
-   if [ "$newversion" = "$version" ]
-   then
-      echo "$scriptname is already the latest version ($version) - continuing"
-   else
-      echo "New version ($newversion) of $scriptname detected"
-      yesno "download and run $scriptname $newversion now"
-      if [ $ans -eq 1 ]
-      then
-         echo "OK, downloading and executing $script $*"
-         download_file "$upgradeurl"
-         if [ "$scriptname" -ef "$script" ]
-            then
-         let a=1
-         else
+if [ "$newversion" = "$version" ]; then
+    echo "$scriptname is already the latest version ($version) - continuing"
+else
+    echo "New version ($newversion) of $scriptname detected"
+    yesno "download and run $scriptname $newversion now"
+    if [ $ans -eq 1 ]; then
+        echo "OK, downloading and executing $script $*"
+        download_file "$upgradeurl"
+        if [ "$scriptname" -ef "$script" ]; then
+            let a=1
+        else
             mv -f "$scriptname" "$script"
-         fi
-         chmod u+x "$script"
-         echo "Download of $scriptname $newversion successful"
-	 rm $lock
-         exec "$script" --skip-version-ckeck $*
-         error "Failed to run $script $*"
-      else
-         echo "New version of script is available: $upgradeurl"
-         echo "Please download new script, review code and run it."
-         echo "If you prefer to use current version, run it with \"--skip-version-check\" key."
-         exit 1
-      fi
-   fi
+        fi
+        chmod u+x "$script"
+        echo "Download of $scriptname $newversion successful"
+        rm $lock
+        exec "$script" --skip-version-ckeck $*
+            error "Failed to run $script $*"
+    else
+        echo "New version of script is available: $upgradeurl"
+        echo "Please download new script, review code and run it."
+        echo "If you prefer to use current version, run it with \"--skip-version-check\" key."
+        exit 1
+    fi
+fi
 }
 
 
 check_kernel_update_permission()
 {
-    if [ -e /etc/yum.conf ] && [ -n "$(grep exclude /etc/yum.conf | grep kernel | grep -v '^#')" ]; then
-	echo Kernel update is prohibited on your system. | tee -a $log
-	echo Remove "exclude kernel" option from /etc/yum.conf | tee -a $log
-	echo and run this script again. | tee -a $log
-	rm -f $lock
-	exit 1;
-    fi;
+if [ -e /etc/yum.conf ] && [ -n "$(grep exclude /etc/yum.conf | grep kernel | grep -v '^#')" ]; then
+    echo Kernel update is prohibited on your system. | tee -a $log
+    echo Remove "exclude kernel" option from /etc/yum.conf | tee -a $log
+    echo and run this script again. | tee -a $log
+    rm -f $lock
+    exit 1;
+fi;
 
-	if rpm -q --qf '%{name}\n' `rpm -qa | grep hpahcisr` > /dev/null 2>&1 ; then
-	    echo "This server uses a binary driver hpahcisr.ko (HP AHCI Software RAID)."
-	    echo "That driver is not compatible with Virtuozzo Linux kernel."
-	    echo "We don’t know about any open source alternative for that driver."
-	    echo "The only work around known to us today is to disable RAID feature in system BIOS."
-	    echo "and configure Linux software raid instead. Such work around requires full re-install of the OS."
-	    rm -f $lock
-	exit 1
-	fi
+if rpm -q --qf '%{name}\n' `rpm -qa | grep hpahcisr` > /dev/null 2>&1 ; then
+    echo "This server uses a binary driver hpahcisr.ko (HP AHCI Software RAID)."
+    echo "That driver is not compatible with Virtuozzo Linux kernel."
+    echo "We don’t know about any open source alternative for that driver."
+    echo "The only work around known to us today is to disable RAID feature in system BIOS."
+    echo "and configure Linux software raid instead. Such work around requires full re-install of the OS."
+    rm -f $lock
+    exit 1
+fi
 
-    if [ "$skipkmodcheck" = "false" ] ; then
-	if rpm -q --qf '%{name}\n' `rpm -qa | grep ^kmod\-` | grep -v -e iolimits -e aacraid -e megaraid_sas -e1000e -e r8168 -e microsoft -e igb -e libs -e ^kmod$; then
-	    echo "You have third-party kernel module rpm installed (see line above)."
-	    echo "It's not compatible with Virtuozzo Linux kernel."
-	    echo "Please contact Virtuozzo Linux support at $helpdesk"
-	    rm -f $lock
-	exit 1
-	fi
+if [ "$skipkmodcheck" = "false" ] ; then
+    if rpm -q --qf '%{name}\n' `rpm -qa | grep ^kmod\-` | grep -v -e iolimits -e aacraid -e megaraid_sas -e1000e -e r8168 -e microsoft -e igb -e libs -e ^kmod$; then
+        echo "You have third-party kernel module rpm installed (see line above)."
+        echo "It's not compatible with Virtuozzo Linux kernel."
+        echo "Please contact Virtuozzo Linux support at $helpdesk"
+        rm -f $lock
+        exit 1
     fi
-    
-    if uname -r | grep -v  $KERNEL_VERSION ; then
-	echo "Your server has non-standard kernel installed (see above)" | tee -a $log
-	echo "To resolve the issue, we can unregister this kernel RPM from RPM database." | tee -a $log
-	echo -n "Do you want to do that [Y/N]: " | tee -a $log
-	read YN
-	case $YN in
-	    [yY]|[yY][eE][sS])
-               echo "Removing non-standard kernels from RPM database" | tee -a $log
-               rpm -e --justdb `rpm -qa | grep kernel | grep -v $KERNEL_VERSION` 2>&1 | tee -a $log
-               ;;
-	    *)
-		echo "Please remove non-standard kernels manually and run this script again." | tee -a $log
-		rm 
-		rm -f $lock
-		exit 1
-		;;
-	esac
-    fi
+fi
+
+if uname -r | grep -v  $KERNEL_VERSION ; then
+    echo "Your server has non-standard kernel installed (see above)" | tee -a $log
+    echo "To resolve the issue, we can unregister this kernel RPM from RPM database." | tee -a $log
+    echo -n "Do you want to do that [Y/N]: " | tee -a $log
+    read YN
+    case $YN in
+        [yY]|[yY][eE][sS])
+            echo "Removing non-standard kernels from RPM database" | tee -a $log
+            rpm -e --justdb `rpm -qa | grep kernel | grep -v $KERNEL_VERSION` 2>&1 | tee -a $log
+            ;;
+        *)
+            echo "Please remove non-standard kernels manually and run this script again." | tee -a $log
+            rm -f $lock
+            exit 1
+            ;;
+    esac
+fi
 }
 
 check_yum ()
 {
-    if [ ! -n "$(cat /etc/yum.conf | sed -e 's/ //g' | grep -i ^"plugins=1")" ]; then
-	echo "Yum error: Plugins are disabled" | tee -a $log
-	echo "Please enable yum-plugins: add string \"plugins=1\" to the /etc/yum.conf" | tee -a $log
-	rm -f $lock
-	exit 1;
-    fi;
+if [ ! -n "$(cat /etc/yum.conf | sed -e 's/ //g' | grep -i ^"plugins=1")" ]; then
+    echo "Yum error: Plugins are disabled" | tee -a $log
+    echo "Please enable yum-plugins: add string \"plugins=1\" to the /etc/yum.conf" | tee -a $log
+    rm -f $lock
+    exit 1;
+fi;
 }
 
 check_release ()
@@ -233,71 +219,73 @@ ARCH=$(uname -i)
 CPU=$(uname -p)
 
 # handle 32bit xen with x86_64 host kernel
-if ( ! rpm -q glibc.x86_64 > /dev/null 2>&1 ) && [ "$ARCH" = "x86_64" ] ; then
-ARCH=i386
-CPU=i686
+if ( ! rpm -q glibc.x86_64 > /dev/null 2>&1 ) && [ "$ARCH" = "x86_64" ]; then
+    ARCH=i386
+    CPU=i686
 fi
 
 OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cut -c 1)"
-    if [ "$OS_VERSION" -eq "6" ]; then
+if [ "$OS_VERSION" -eq "6" ]; then
     KERNEL_VERSION=2.6.32
     VIRTUOZZO_RELEASE=http://kojistorage.eng.sw.ru/mash/dist-vz6/latest/${ARCH}/os/Packages/v/vzlinux-release-6.7.0-3.vz6.${CPU}.rpm
     VIRTUOZZO_LOGOS=http://kojistorage.eng.sw.ru/mash/dist-vz6/latest/${ARCH}/os/Packages/r/redhat-logos-60.0.14-13.vz6.1.noarch.rpm
-    elif [ "$OS_VERSION" -eq "7" ]; then
+elif [ "$OS_VERSION" -eq "7" ]; then
     KERNEL_VERSION=3.10.0
     VIRTUOZZO_RELEASE=http://kojistorage.eng.sw.ru/mash/dist-vl7/latest/${ARCH}/os/Packages/v/vzlinux-release-7.1.0-12.vl7.${CPU}.rpm
     VIRTUOZZO_LOGOS=http://kojistorage.eng.sw.ru/mash/dist-vl7/latest/${ARCH}/os/Packages/v/virtuozzo-logos-70.0.5-2.vl7.noarch.rpm
-    fi
-    if [ "$OS_VERSION" != 6 ] && [ "$OS_VERSION" != 7 ]; then
-	echo "This script is for Version 6 or 7 only" | tee -a $log
-	rm -f $lock
-	exit 1;
-    fi;
+fi
+
+if [ "$OS_VERSION" != 6 ] && [ "$OS_VERSION" != 7 ]; then
+    echo "This script is for Version 6 or 7 only" | tee -a $log
+    rm -f $lock
+    exit 1;
+fi;
 }
 
 backup ()
 {
-    BACKUP=/etc/virtuozzo-convert-saved
-    mkdir -p $BACKUP
-    cp /etc/redhat-release $BACKUP 2>&1 | tee -a $log
-    #disable redhat
-    mv /etc/yum.repos.d/RedHat-Base.repo $BACKUP  >> $log 2>&1 #test if that is the rate path
-    yum -y erase rhnlib >> $log 2>&1
-    yum -y erase subscription-manager >> $log 2>&1
-    rpm -e --nodeps redhat-release-notes redhat-release redhat-logos 2> /dev/null
-    rpm -e --nodeps redhat-release-server  >> $log 2>&1
-    if [ -f /etc/sysconfig/rhn/systemid ]; then mv /etc/sysconfig/rhn/systemid $BACKUP  >> $log 2>&1; fi
-    if [ -f /etc/yum/pluginconf.d/rhnplugin.conf ]; then mv /etc/yum/pluginconf.d/rhnplugin.conf $BACKUP  >> $log 2>&1 ; fi
+BACKUP=/etc/virtuozzo-convert-saved
+mkdir -p $BACKUP
+cp /etc/redhat-release $BACKUP 2>&1 | tee -a $log
+# Disable RedHat
+mv /etc/yum.repos.d/RedHat-Base.repo $BACKUP  >> $log 2>&1 #test if that is the rate path
+yum -y erase rhnlib >> $log 2>&1
+yum -y erase subscription-manager >> $log 2>&1
+rpm -e --nodeps redhat-release-notes redhat-release redhat-logos 2> /dev/null
+rpm -e --nodeps redhat-release-server  >> $log 2>&1
+if [ -f /etc/sysconfig/rhn/systemid ]; then mv /etc/sysconfig/rhn/systemid $BACKUP  >> $log 2>&1; fi
+if [ -f /etc/yum/pluginconf.d/rhnplugin.conf ]; then mv /etc/yum/pluginconf.d/rhnplugin.conf $BACKUP  >> $log 2>&1 ; fi
 
-    #disable centos
-    mv /etc/yum.repos.d/CentOS-Media.repo $BACKUP >> $log 2>&1
-    mv /etc/yum.repos.d/CentOS-Base.repo $BACKUP >> $log 2>&1
-    rpm -e --nodeps centos-release centos-release-notes redhat-logos  >> $log 2>&1
-    #disable scientific linux
-    mv /etc/yum.repos.d/sl.repo $BACKUP >> $log 2>&1
-    mv /etc/yum.repos.d/cd.repo $BACKUP >> $log 2>&1
-    rpm -e --nodeps sl-release sl-release-notes redhat-logos >> $log 2>&1;
+# Disable CentOS
+mv /etc/yum.repos.d/CentOS-Media.repo $BACKUP >> $log 2>&1
+mv /etc/yum.repos.d/CentOS-Base.repo $BACKUP >> $log 2>&1
+rpm -e --nodeps centos-release centos-release-notes redhat-logos  >> $log 2>&1
+
+# Disable Scientific Linux
+mv /etc/yum.repos.d/sl.repo $BACKUP >> $log 2>&1
+mv /etc/yum.repos.d/cd.repo $BACKUP >> $log 2>&1
+rpm -e --nodeps sl-release sl-release-notes redhat-logos >> $log 2>&1;
 }
 
 prep ()
 {
-    yum clean all 2>&1 | tee -a $log
-    rpm --import http://repo.cloudlinux.com/cloudlinux/security/RPM-GPG-KEY-CloudLinux  >> $log 2>&1
-    rpm -Uvh $VIRTUOZZO_RELEASE $VIRTUOZZO_LOGOS --force >> $log 2>&1 ;
-    # Handle LES
-    if [ -x /usr/local/sbin/les ]; then
-        LES=true
-        /usr/local/sbin/les -da 2>&1 | tee -a $log
-        check_pipestatus 0 "Unable to turn off LES, please contact Virtuozzo Linux support at $helpdesk"
-    fi
+yum clean all 2>&1 | tee -a $log
+rpm --import http://repo.cloudlinux.com/cloudlinux/security/RPM-GPG-KEY-CloudLinux  >> $log 2>&1
+rpm -Uvh $VIRTUOZZO_RELEASE $VIRTUOZZO_LOGOS --force >> $log 2>&1 ;
+# Handle LES
+if [ -x /usr/local/sbin/les ]; then
+    LES=true
+    /usr/local/sbin/les -da 2>&1 | tee -a $log
+    check_pipestatus 0 "Unable to turn off LES, please contact Virtuozzo Linux support at $helpdesk"
+fi
 }
 
 check_cloudlinux_repos ()
 {
-    ENABLED_REPOS="--disablerepo=* --enablerepo=cloudlinux-$ARCH-server-$OS_VERSION"
-    for repo in `yum repolist|grep cloudlinux|grep enabled|cut -d' ' -f1`; do
+ENABLED_REPOS="--disablerepo=* --enablerepo=cloudlinux-$ARCH-server-$OS_VERSION"
+for repo in `yum repolist|grep cloudlinux|grep enabled|cut -d' ' -f1`; do
     ENABLED_REPOS="$ENABLED_REPOS --enablerepo=$repo"
-    done
+done
 }
 
 check_source ()
@@ -305,11 +293,11 @@ check_source ()
 {
 NEED_SOURCE="NO"
 if ! rpm -q pciutils > /dev/null 2>&1; then
-yum -y install pciutils
+    yum -y install pciutils
 fi
 if [ -x /sbin/lspci ] ; then
     if $(/sbin/lspci -n | grep -q 1414) || $(/sbin/lspci -n | grep -q 15ad) || $(/sbin/lspci -n | grep -q 1ab8); then
-    NEED_SOURCE="YES"
+        NEED_SOURCE="YES"
     fi
 fi
 }
@@ -319,7 +307,7 @@ check_root ()
 {
 if [ ! -e /dev/root ]; then
     if grep -q ^/ /etc/fstab; then
-    ln -s `awk '{ if ($2 == "/") print $1; }' /etc/fstab` /dev/root
+        ln -s `awk '{ if ($2 == "/") print $1; }' /etc/fstab` /dev/root
     fi
 fi
 }
@@ -329,8 +317,8 @@ check_efi()
 {
 if [ -f /boot/efi/EFI/redhat/grub.conf ] ; then
     if [ "$(readlink /etc/grub.conf)" != "/boot/efi/EFI/redhat/grub.conf" ] || [ "$(readlink /boot/grub/grub.conf)" != "/boot/efi/EFI/redhat/grub.conf" ]; then
-    ln -sf /boot/efi/EFI/redhat/grub.conf /etc/grub.conf
-    ln -sf /boot/efi/EFI/redhat/grub.conf /boot/grub/grub.conf
+        ln -sf /boot/efi/EFI/redhat/grub.conf /etc/grub.conf
+        ln -sf /boot/efi/EFI/redhat/grub.conf /boot/grub/grub.conf
     fi
 fi
 }
@@ -347,16 +335,17 @@ Usage:
 EOF
 }
 
+# Start here ################################################################
+
 init_vars $0
 check_release
 check_yum
 check_source
 
-
 if [ -f $lock ] ; then
     if [ -d /proc/$(cat $lock) ] ; then
-    echo "$scriptname is already running"
-    exit 1
+        echo "$scriptname is already running"
+        exit 1
     fi
 fi
 
@@ -371,84 +360,80 @@ eval set -- "$options"
 
 while true; do
     case $1 in
-    --help)
-	print_help
-	rm -f $lock
-	exit 0
-	;;
-    --skip-kmod-check)
-	skipkmodcheck=true
-	shift
-	;;
-    --skip-version-check)
-	skipversioncheck=true
-	shift
-	;;
-    --)
-	shift
-	break
-	;;
-    -*)
-	echo "$0: error - unrecognized option $1" 1>&2
-	print_help
-	rm -f $lock
-	exit 1
-	;;
-     *) echo "Internal error!" ; rm -f $lock; exit 1 ;;
+        --help)
+            print_help
+            rm -f $lock
+            exit 0
+            ;;
+        --skip-kmod-check)
+            skipkmodcheck=true
+            shift
+            ;;
+        --skip-version-check)
+            skipversioncheck=true
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            echo "$0: error - unrecognized option $1" 1>&2
+            print_help
+            rm -f $lock
+            exit 1
+            ;;
+         *) echo "Internal error!" ; rm -f $lock; exit 1 ;;
     esac
 done
 
 if [ "$skipversioncheck" = "false" ]; then
-
     check_version
-
 fi
 
 
 if [ "$conversion" = "true" ] ; then
+    check_kernel_update_permission
+    check_source
+    check_root
 
-check_kernel_update_permission
-check_source
+    yum clean all 2>&1 | tee -a $log
 
-check_root
-yum clean all 2>&1 | tee -a $log
+    if rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r) > /dev/null 2>&1 ; then
+        KERNEL=$(rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r))
+    else
+        KERNEL=kernel
+    fi
 
-if rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r) > /dev/null 2>&1 ; then
-    KERNEL=$(rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r))
-else
-    KERNEL=kernel
-fi
+    echo "kernel flavour $KERNEL" >> $log
 
-echo "kernel flavour $KERNEL" >> $log
+    PKGS="$KERNEL vzlinux-release"
+    if rpm -qa | grep -q kmod > /dev/null 2>&1 ; then
+        for kmod in `rpm -q --qf '%{name}\n' $(rpm -qa | grep ^kmod\-) | grep -v x86_64 | grep -v i686 | grep -e e1000e -e aacraid -e r8168 -e microsoft -e igb`; do
+            rpm -e --justdb $kmod --nodeps
+            PKGS="$PKGS $kmod"
+        done
+    fi
 
-PKGS="$KERNEL vzlinux-release"
-if rpm -qa | grep -q kmod > /dev/null 2>&1 ; then
-	for kmod in `rpm -q --qf '%{name}\n' $(rpm -qa | grep ^kmod\-) | grep -v x86_64 | grep -v i686 | grep -e e1000e -e aacraid -e r8168 -e microsoft -e igb`; do
-	    rpm -e --justdb $kmod --nodeps
-	    PKGS="$PKGS $kmod"
-	done
-	fi
+    if [ $NEED_SOURCE = "YES" ] ; then PKGS="$PKGS $KERNEL-devel gcc make"; fi
 
-	if [ $NEED_SOURCE = "YES" ] ; then PKGS="$PKGS $KERNEL-devel gcc make"; fi
+    if rpm -q openssl-1.0.1e-30.el6.8 2>&1 > /dev/null; then
+        yum -y downgrade openssl-1.0.1e-30.el6_6.8 openssl-devel-1.0.1e-30.el6_6.8 openssl-perl-1.0.1e-30.el6_6.8 \
+        openssl-static-1.0.1e-30.el6_6.8
+    fi
 
-	if rpm -q openssl-1.0.1e-30.el6.8 2>&1 > /dev/null; then
-	    yum -y downgrade openssl-1.0.1e-30.el6_6.8 openssl-devel-1.0.1e-30.el6_6.8 openssl-perl-1.0.1e-30.el6_6.8 \
-	    openssl-static-1.0.1e-30.el6_6.8
-	fi
+    if rpm -q subscription-manager 2>&1 > /dev/null; then
+        echo "Uninstalling subscription-manager..." | tee -a $log
+        yum -y erase subscription-manager
+    fi
 
-	if rpm -q subscription-manager 2>&1 > /dev/null; then
-	echo "Uninstalling subscription-manager..." | tee -a $log
-	    yum -y erase subscription-manager
-	fi
-
-        rpm -e --nodeps cpuspeed > /dev/null 2>&1
-	yum -y $ENABLED_REPOS --disableexcludes=main install $PKGS 2>&1 | tee -a $log
-	check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
-
+    rpm -e --nodeps cpuspeed > /dev/null 2>&1
+    yum -y $ENABLED_REPOS --disableexcludes=main install $PKGS 2>&1 | tee -a $log
+    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
 fi
 
 if [ "$LES" = "true" ]; then
-echo "Linux Environment Security was disabled, you can re-enable it if needed"
+    echo "Linux Environment Security was disabled, you can re-enable it if needed"
 fi
 
 echo "You can find complete log in $log"
