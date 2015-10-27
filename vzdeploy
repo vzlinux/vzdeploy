@@ -20,7 +20,7 @@ kexec=false
 builddirectadmin=true
 conversion=true
 skipkmodcheck=false
-skipversioncheck=false
+skipversioncheck=true
 NO_ARGS=0
 
 helpdesk="https://bugs.openvz.org"
@@ -322,7 +322,7 @@ print_help ()
 Usage:
 
   -h, --help            Print this message
-  --skip-kmod-check	Skip check for unsupported kmods
+  --skip-kmod-check     Skip check for unsupported kmods
   --skip-version-check  Do not check for script updates
 EOF
 }
