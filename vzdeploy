@@ -280,14 +280,6 @@ if [ -x /usr/local/sbin/les ]; then
 fi
 }
 
-check_cloudlinux_repos ()
-{
-ENABLED_REPOS="--disablerepo=* --enablerepo=cloudlinux-$ARCH-server-$OS_VERSION"
-for repo in `yum repolist|grep cloudlinux|grep enabled|cut -d' ' -f1`; do
-    ENABLED_REPOS="$ENABLED_REPOS --enablerepo=$repo"
-done
-}
-
 check_source ()
 # We need to install kernel-devel for virtual containers
 {
@@ -428,7 +420,7 @@ if [ "$conversion" = "true" ] ; then
     fi
 
     rpm -e --nodeps cpuspeed > /dev/null 2>&1
-    yum -y $ENABLED_REPOS --disableexcludes=main install $PKGS 2>&1 | tee -a $log
+    yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $PKGS 2>&1 | tee -a $log
     check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
 fi
 
