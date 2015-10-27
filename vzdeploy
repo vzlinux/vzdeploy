@@ -21,7 +21,6 @@ init_vars()
    conversion=true
    skipkmodcheck=false
    skipversioncheck=false
-   beta=false
    NO_ARGS=0
 
    helpdesk="https://bugs.openvz.org"
@@ -364,7 +363,7 @@ fi
 echo $$ > $lock
 check_exit_code 0 "Please run $scriptname as root"
 
-options=`getopt -o ecmik: -l skip-kmod-check,help,skip-version-check,beta: -- "$@"`
+options=`getopt -o ecmik: -l help,skip-kmod-check,skip-version-check: -- "$@"`
 
 if [ $? != 0 ] ; then print_help ; rm -f $lock; exit 1 ; fi
 
@@ -383,10 +382,6 @@ while true; do
 	;;
     --skip-version-check)
 	skipversioncheck=true
-	shift
-	;;
-    --beta)
-	beta=true
 	shift
 	;;
     --)
