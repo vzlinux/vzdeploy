@@ -18,7 +18,6 @@ init_vars()
    wget_options="-q"
    kexec=false
    builddirectadmin=true
-   regen_modprobe_conf=false
    conversion=true
    skipkmodcheck=false
    skipversioncheck=false
@@ -365,7 +364,7 @@ fi
 echo $$ > $lock
 check_exit_code 0 "Please run $scriptname as root"
 
-options=`getopt -o ecmik: -l regenmodprobeconf,skip-kmod-check,help,skip-version-check,beta: -- "$@"`
+options=`getopt -o ecmik: -l skip-kmod-check,help,skip-version-check,beta: -- "$@"`
 
 if [ $? != 0 ] ; then print_help ; rm -f $lock; exit 1 ; fi
 
@@ -377,10 +376,6 @@ while true; do
 	print_help
 	rm -f $lock
 	exit 0
-	;;
-    -m|--regenmodprobeconf)
-	regen_modprobe_conf=true
-	shift
 	;;
     --skip-kmod-check)
 	skipkmodcheck=true
