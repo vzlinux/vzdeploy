@@ -439,10 +439,6 @@ if rpm -qa | grep -q kmod > /dev/null 2>&1 ; then
 	done
 	fi
 
-	if [ -d /sys/module/storvsc ] ; then
-	    PKGS="$PKGS microsoft-hyper-v"
-	fi
-
 	if [ $NEED_SOURCE = "YES" ] ; then PKGS="$PKGS $KERNEL-devel gcc make"; fi
 
 	if rpm -q openssl-1.0.1e-30.el6.8 2>&1 > /dev/null; then
