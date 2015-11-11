@@ -228,18 +228,12 @@ if ( ! rpm -q glibc.x86_64 > /dev/null 2>&1 ) && [ "$ARCH" = "x86_64" ]; then
 fi
 
 OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cut -c 1)"
-if [ "$OS_VERSION" -eq "6" ]; then
-    KERNEL_VERSION=2.6.32
-    VIRTUOZZO_RELEASE=http://kojistorage.eng.sw.ru/mash/dist-vz6/latest/${ARCH}/os/Packages/v/vzlinux-release-6.7.0-3.vz6.${CPU}.rpm
-    VIRTUOZZO_LOGOS=http://kojistorage.eng.sw.ru/mash/dist-vz6/latest/${ARCH}/os/Packages/r/redhat-logos-60.0.14-13.vz6.1.noarch.rpm
-elif [ "$OS_VERSION" -eq "7" ]; then
+if [ "$OS_VERSION" -eq "7" ]; then
     KERNEL_VERSION=3.10.0
     VIRTUOZZO_RELEASE=http://repo.virtuozzo.com/vzlinux/migrate/7/${ARCH}/vzlinux-release-7.1.0-16.vl7.${CPU}.rpm
     VIRTUOZZO_LOGOS=http://repo.virtuozzo.com/vzlinux/migrate/7/${ARCH}/vzlinux-logos-70.0.5-4.vl7.noarch.rpm
-fi
-
-if [ "$OS_VERSION" != 6 ] && [ "$OS_VERSION" != 7 ]; then
-    echo "This script is for Version 6 or 7 only" | tee -a $log
+else
+    echo "This script is for OS version 7 only" | tee -a $log
     rm -f $lock
     exit 1;
 fi;
@@ -454,11 +448,6 @@ if [ "$conversion" = "true" ] ; then
     fi
 
     if [ $NEED_SOURCE = "YES" ] ; then PKGS="$PKGS $KERNEL-devel gcc make"; fi
-
-    if rpm -q openssl-1.0.1e-30.el6.8 2>&1 > /dev/null; then
-        yum -y downgrade openssl-1.0.1e-30.el6_6.8 openssl-devel-1.0.1e-30.el6_6.8 openssl-perl-1.0.1e-30.el6_6.8 \
-        openssl-static-1.0.1e-30.el6_6.8
-    fi
 
     if rpm -q subscription-manager 2>&1 > /dev/null; then
         echo "Uninstalling subscription-manager..." | tee -a $log
