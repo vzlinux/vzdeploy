@@ -7,7 +7,7 @@
 #		        release related packages and new kernel
 ## vzdeploy INFO
 
-version="0.1"
+version="0.2"
 
 init_vars()
 {
