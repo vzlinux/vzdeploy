@@ -315,7 +315,7 @@ fi
 prep()
 {
 yum clean all 2>&1 | tee -a $log
-rpm --import http://repo.cloudlinux.com/cloudlinux/security/RPM-GPG-KEY-CloudLinux  >> $log 2>&1
+rpm --import http://repo.virtuozzo.com/vzlinux/security/VZLINUX_GPG_KEY >> $log 2>&1
 rpm -Uvh $VIRTUOZZO_RELEASE $VIRTUOZZO_LOGOS --force >> $log 2>&1 ;
 # Handle LES
 if [ -x /usr/local/sbin/les ]; then
