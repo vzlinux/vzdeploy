@@ -383,7 +383,7 @@ fi
 echo $$ > $lock
 check_exit_code 0 "Please run $scriptname as root"
 
-options=`getopt -o ecmik: -l help,skip-kmod-check,skip-version-check: -- "$@"`
+options=`getopt -o ecmik: -l help,skip-kmod-check,skip-version-check -- "$@"`
 
 if [ $? != 0 ] ; then print_help ; rm -f $lock; exit 1 ; fi
 
