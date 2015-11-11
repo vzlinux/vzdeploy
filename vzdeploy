@@ -16,7 +16,6 @@ lock=/var/lock/vzdeploy.lck
 
 wget="/usr/bin/wget"
 wget_options="-q"
-conversion=true
 skipkmodcheck=false
 skipversioncheck=false
 NO_ARGS=0
@@ -420,6 +419,14 @@ done
 
 if [ "$skipversioncheck" = "false" ]; then
     check_version
+fi
+
+yesno "continue with deploy"
+if [ $ans -eq 1 ]; then
+    conversion=true
+    echo "Deploy started"
+else
+    conversion=false
 fi
 
 if [ "$conversion" = "true" ] ; then
