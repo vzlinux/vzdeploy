@@ -9,7 +9,6 @@
 
 version="0.1"
 
-
 init_vars()
 {
 log=/var/log/vzdeploy.log
@@ -25,7 +24,7 @@ NO_ARGS=0
 helpdesk="https://bugs.openvz.org"
 
 # Update checker URL
-checksite="http://repo.cloudlinux.com/cloudlinux/sources/cln/"
+checksite="http://repo.virtuozzo.com/vzlinux/vzdeploy/"
 checkfile="version.dat"
 checkurl="$checksite$checkfile"
 scriptname="vzdeploy"
