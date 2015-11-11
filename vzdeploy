@@ -18,7 +18,7 @@ wget="/usr/bin/wget"
 wget_options="-q"
 conversion=true
 skipkmodcheck=false
-skipversioncheck=true
+skipversioncheck=false
 NO_ARGS=0
 
 helpdesk="https://bugs.openvz.org"
