@@ -1,0 +1,95 @@
+#!/bin/sh
+
+#
+# Rolls back VzLinux to CentOS or RHEL
+#
+
+log=/var/log/vzrollback.log
+lock=/var/lock/vzrollback.lck
+
+wget="/usr/bin/wget"
+wget_options="-q"
+
+check_exit_code()  { if [ $? -ne $1 ]; then echo $2; rm -f $lock; exit 1; fi; }
+check_pipestatus()   { if [ $PIPESTATUS -ne $1 ]; then echo $2; rm -f $lock; exit 1; fi; }
+
+backup()
+{
+BACKUP=/etc/virtuozzo-convert-saved
+mkdir -p $BACKUP
+cp /etc/redhat-release $BACKUP 2>&1 | tee -a $log
+if [ -f /etc/yum.repos.d/vzlinux.repo ]; then
+    mv /etc/yum.repos.d/vzlinux.repo $BACKUP >> $log 2>&1 #test if that is the rate path
+fi
+}
+
+print_help()
+{
+    cat << EOF >&2
+Usage: $0 release_pkg_url
+
+  release_file_url      URL to *-release rpm package
+                        (e.g., centos-release)
+
+Example:
+  $0 http://mirror.yandex.ru/centos/7.2.1511/os/x86_64/Packages/centos-release-7-2.1511.el7.centos.2.10.x86_64.rpm
+EOF
+}
+
+if [ -f $lock ] ; then
+    if [ -d /proc/$(cat $lock) ] ; then
+        echo "$scriptname is already running"
+        exit 1
+    fi
+fi
+
+echo $$ > $lock
+check_exit_code 0 "Please run $scriptname as root"
+
+if [ "$#" -ne 1 ]; then
+    print_help
+    rm -f $lock
+    exit 1
+fi
+
+RELEASE_PKG=$1
+LOGOS_PKG=`basename ${RELEASE_PKG} | cut -f1 -d-`
+
+if [[ -e "${RELEASE_PKG}" ]]; then
+    cp "${RELEASE_PKG}" /tmp/os-release.rpm
+else
+    echo "Downloading ${RELEASE_PKG}" | tee -a $log
+    yum install -y wget
+    $wget $wget_options ${RELEASE_PKG} -O /tmp/os-release.rpm || exit 1
+fi
+
+backup
+
+rpm -e --nodeps vzlinux-release 2>&1 | tee -a $log
+check_pipestatus 0 "Unable to remove vzlinux-release"
+
+rpm -i /tmp/os-release.rpm 2>&1 | tee -a $log
+check_pipestatus 0 "Unable to install ${RELEASE_PKG}"
+rm -f /tmp/os-release.rpm
+
+sed -i s/vzlinux-release/${LOGOS_PKG}-release/ /etc/yum.conf 2>&1 | tee -a $log
+sed -i s/virtuozzo-release/${LOGOS_PKG}-release/ /etc/yum.conf 2>&1 | tee -a $log
+yum distro-sync -y 2>&1 | tee -a $log
+check_pipestatus 0 "Failed to install necessary packages!"
+
+rpm -e --nodeps vzlinux-logos 2>&1 | tee -a $log
+check_pipestatus 0 "Failed to remove vzlinux-logos!"
+
+yum install -y ${LOGOS_PKG}-logos 2>&1 | tee -a $log
+check_pipestatus 0 "Failed to install ${LOGOS_PKG}-logos!"
+
+rpm -qa | grep kernel | grep vl7 | xargs rpm -e 2>&1 | tee -a $log
+check_pipestatus 0 "Failed to remove vzlinux kernel!"
+
+grub2-mkconfig -o /boot/grub2/grub.cfg 2>&1 | tee -a $log
+check_pipestatus 0 "Failed to regenerate grub config!"
+
+echo "Rollback is complete! Please reboot your system. You can find complete log in $log"
+rm -f $lock
+exit 0
+
