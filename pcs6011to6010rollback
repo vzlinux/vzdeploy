@@ -1,0 +1,61 @@
+#!/bin/sh
+
+#
+# Rolls back VzLinux (PCS 6.0.11) to CloudLinux (6.0.10) repositories
+#
+
+log=/var/log/vzrollback.log
+lock=/var/lock/vzrollback.lck
+
+wget="/usr/bin/wget"
+wget_options="-q"
+
+check_exit_code()  { if [ $? -ne $1 ]; then echo $2; rm -f $lock; exit 1; fi; }
+check_pipestatus()   { if [ $PIPESTATUS -ne $1 ]; then echo $2; rm -f $lock; exit 1; fi; }
+
+backup()
+{
+BACKUP=/etc/virtuozzo-convert-saved
+mkdir -p $BACKUP
+cp /etc/redhat-release $BACKUP 2>&1 | tee -a $log
+if [ -f /etc/yum.repos.d/vzlinux.repo ]; then
+    mv /etc/yum.repos.d/vzlinux.repo $BACKUP >> $log 2>&1 #test if that is the rate path
+fi
+}
+
+if [ -f $lock ] ; then
+    if [ -d /proc/$(cat $lock) ] ; then
+        echo "$scriptname is already running"
+        exit 1
+    fi
+fi
+
+echo $$ > $lock
+check_exit_code 0 "Please run $scriptname as root"
+
+RELEASE_PKG=http://updates.cloudserver.parallels.com/cloudserver/6.0/Release/Packages/cloudlinux-release-6-6.7.0.x86_64.rpm
+
+if [[ -e "${RELEASE_PKG}" ]]; then
+    cp "${RELEASE_PKG}" /tmp/os-release.rpm
+else
+    echo "Downloading ${RELEASE_PKG}" | tee -a $log
+    yum install -y wget
+    $wget $wget_options ${RELEASE_PKG} -O /tmp/os-release.rpm || exit 1
+fi
+
+backup
+
+rpm -e --nodeps vzlinux-release 2>&1 | tee -a $log
+check_pipestatus 0 "Unable to remove vzlinux-release"
+
+rpm -i /tmp/os-release.rpm 2>&1 | tee -a $log
+check_pipestatus 0 "Unable to install ${RELEASE_PKG}"
+rm -f /tmp/os-release.rpm
+
+yum distro-sync -y 2>&1 | tee -a $log
+check_pipestatus 0 "Failed to install necessary packages!"
+
+echo "Rollback is complete! Please reboot your system. You can find complete log in $log"
+rm -f $lock
+exit 0
+
