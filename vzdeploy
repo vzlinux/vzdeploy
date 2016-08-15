@@ -446,7 +446,8 @@ if [ "$conversion" = "true" ] ; then
 
     echo "kernel flavour $KERNEL" >> $log
 
-    PKGS="$KERNEL vzlinux-release"
+    PKGS="vzlinux-release"
+    KPKGS="$KERNEL"
     if rpm -qa | grep -q kmod > /dev/null 2>&1 ; then
         for kmod in `rpm -q --qf '%{name}\n' $(rpm -qa | grep ^kmod\-) | grep -v x86_64 | grep -v i686 | grep -e e1000e -e aacraid -e r8168 -e microsoft -e igb`; do
             rpm -e --justdb $kmod --nodeps
@@ -454,7 +455,7 @@ if [ "$conversion" = "true" ] ; then
         done
     fi
 
-    if [ $NEED_SOURCE = "YES" ] ; then PKGS="$PKGS $KERNEL-devel gcc make"; fi
+    if [ $NEED_SOURCE = "YES" ] ; then PKGS="$PKGS gcc make"; KPKGS="$KPKGS $KERNEL-devel"; fi
 
     if rpm -q subscription-manager 2>&1 > /dev/null; then
         echo "Uninstalling subscription-manager..." | tee -a $log
@@ -463,6 +464,8 @@ if [ "$conversion" = "true" ] ; then
 
     rpm -e --nodeps cpuspeed > /dev/null 2>&1
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $PKGS 2>&1 | tee -a $log
+    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
+    yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $KPKGS 2>&1 | tee -a $log
     check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
 fi
 
