@@ -88,6 +88,9 @@ if [ -f "$dlbase" ]; then
     mv -f "$dlbase" "$old_dlbase"
 fi
 
+echo "Check for wget, install if absent..."
+rpm -q wget >/dev/null 2>&1 || yum install -y wget
+
 echo "Downloading $dlbase (please wait)"
 $wget $wget_options -O "$dlbase" "$1"
 
