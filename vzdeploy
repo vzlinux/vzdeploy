@@ -442,11 +442,12 @@ if [ "$conversion" = "true" ] ; then
 
     yum clean all 2>&1 | tee -a $log
 
-    if rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r) > /dev/null 2>&1 ; then
-        KERNEL=$(rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r))
-    else
-        KERNEL=kernel
-    fi
+#    if rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r) > /dev/null 2>&1 ; then
+#        KERNEL=$(rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r))
+#    else
+#        KERNEL=kernel
+#    fi
+    KERNEL=vzkernel
 
     echo "kernel flavour $KERNEL" >> $log
 
