@@ -7,7 +7,7 @@
 #		        release related packages and new kernel
 ## vzdeploy INFO
 
-version="0.3"
+version="0.4"
 
 init_vars()
 {
@@ -311,6 +311,7 @@ prep()
 {
 yum clean all 2>&1 | tee -a $log
 rpm --import http://repo.virtuozzo.com/vzlinux/security/VZLINUX_GPG_KEY >> $log 2>&1
+rpm --import http://repo.virtuozzo.com/vzlinux/security/VIRTUOZZO_GPG_KEY >> $log 2>&1
 rpm -Uvh $VIRTUOZZO_RELEASE $VIRTUOZZO_LOGOS --force >> $log 2>&1 ;
 # Handle LES
 if [ -x /usr/local/sbin/les ]; then
