@@ -356,6 +356,12 @@ if [ -f /boot/efi/EFI/redhat/grub.conf ] ; then
         ln -sf /boot/efi/EFI/redhat/grub.conf /boot/grub/grub.conf
     fi
 fi
+if [ -f /boot/efi/EFI/centos/grub.conf ] ; then
+    if [ "$(readlink /etc/grub.conf)" != "/boot/efi/EFI/centos/grub.conf" ] || [ "$(readlink /boot/grub/grub.conf)" != "/boot/efi/EFI/centos/grub.conf" ]; then
+        ln -sf /boot/efi/EFI/centos/grub.conf /etc/grub.conf
+        ln -sf /boot/efi/EFI/centos/grub.conf /boot/grub/grub.conf
+    fi
+fi
 }
 
 
