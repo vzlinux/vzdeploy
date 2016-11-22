@@ -7,7 +7,7 @@
 #		        release related packages and new kernel
 ## vzdeploy INFO
 
-version="0.6"
+version="0.7"
 
 init_vars()
 {
@@ -257,6 +257,9 @@ if rpm -q rhnlib > /dev/null; then
 fi
 if rpm -q subscription-manager > /dev/null; then
     yum -y erase subscription-manager >> $log 2>&1
+fi
+if rpm -q python-vzsubscribe > /dev/null; then
+    yum -y erase python-vzsubscribe >> $log 2>&1
 fi
 if rpm -q redhat-logos > /dev/null; then
     rpm -e --nodeps redhat-logos >> $log 2>&1
