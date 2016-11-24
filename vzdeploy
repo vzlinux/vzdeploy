@@ -484,6 +484,17 @@ if [ "$conversion" = "true" ] ; then
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --exclude=kernel* update 2>&1 | tee -a $log
     check_pipestatus 0 "Unable to update packages, please contact Virtuozzo Linux support at $helpdesk"
 
+    if [ -e /sys/firmware/efi ]; then
+        # Bootloader for the previous system is probably dead by now.
+        # Generate new grub config and create the new EFI boot entry.
+        # It would be nice to remove the previous EFI entry as well, but we don't know which one it is...
+        grub2-mkconfig > /boot/efi/EFI/virtuozzo/grub.cfg
+        efidir_part="$(grub2-probe --target=device --device-map= /boot/efi)"
+        efidir_part_num="$(echo "$efidir_part" | sed 's/^[^0-9]*//')"
+        efidir_disk="$(echo "$efidir_part" | sed 's/[0-9]\+$//')"
+        efibootmgr -c -L VirtuozzoLinux -d "$efidir_disk" -p "$efidir_part_num" -l /EFI/virtuozzo/shim.efi
+    fi
+
     # Packages present in VzLinux installation from ISO
     VZL_PKGS="vllicutils libreport-plugin-vzlinux-bugs kpatch bzip2 firewalld teamd"
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $VZL_PKGS 2>&1 | tee -a $log
