@@ -7,7 +7,7 @@
 #		        release related packages and new kernel
 ## vzdeploy INFO
 
-version="0.8"
+version="0.9"
 
 init_vars()
 {
@@ -141,7 +141,7 @@ else
         fi
         chmod u+x "$script"
         echo "Download of $scriptname $newversion successful"
-        rm $lock
+        rm -f $lock
         exec "$script" --skip-version-ckeck $*
             error "Failed to run $script $*"
     else
@@ -506,7 +506,7 @@ if [ "$LES" = "true" ]; then
 fi
 
 echo "Installing a trial license..."
-vzlicupdate -a trial
+vllicupdate -a trial
 
 echo "You can find complete log in $log"
 rm -f $lock
