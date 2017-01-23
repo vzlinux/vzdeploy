@@ -7,7 +7,7 @@
 #		        release related packages and new kernel
 ## vzdeploy INFO
 
-version="0.9"
+version="1.0"
 
 init_vars()
 {
@@ -142,7 +142,7 @@ else
         chmod u+x "$script"
         echo "Download of $scriptname $newversion successful"
         rm -f $lock
-        exec "$script" --skip-version-ckeck $*
+        exec "$script" --skip-version-check $*
             error "Failed to run $script $*"
     else
         echo "New version of script is available: $upgradeurl"
