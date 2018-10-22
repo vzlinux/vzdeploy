@@ -7,7 +7,7 @@
 #		        release related packages and new kernel
 ## vzdeploy INFO
 
-version="1.0"
+version="1.2"
 
 init_vars()
 {
@@ -232,7 +232,7 @@ fi
 OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cut -c 1)"
 if [ "$OS_VERSION" -eq "7" ]; then
     KERNEL_VERSION=3.10.0
-    VIRTUOZZO_RELEASE=http://repo.virtuozzo.com/vzlinux/migrate/7/${ARCH}/vzlinux-release-7-1.vl7.20.${CPU}.rpm
+    VIRTUOZZO_RELEASE=http://repo.virtuozzo.com/vzlinux/migrate/7/${ARCH}/vzlinux-release-7-1.vl7.76.${CPU}.rpm
     VIRTUOZZO_LOGOS=http://repo.virtuozzo.com/vzlinux/migrate/7/${ARCH}/vzlinux-logos-70.0.5-4.vl7.noarch.rpm
 else
     echo "This script is for OS version 7 only" | tee -a $log
@@ -315,7 +315,7 @@ prep()
 yum clean all 2>&1 | tee -a $log
 rpm --import http://repo.virtuozzo.com/vzlinux/security/VZLINUX_GPG_KEY >> $log 2>&1
 rpm --import http://repo.virtuozzo.com/vzlinux/security/VIRTUOZZO_GPG_KEY >> $log 2>&1
-rpm -Uvh $VIRTUOZZO_RELEASE $VIRTUOZZO_LOGOS --force >> $log 2>&1 ;
+rpm -Uvh $VIRTUOZZO_RELEASE $VIRTUOZZO_LOGOS --force --nodeps >> $log 2>&1 ;
 # Handle LES
 if [ -x /usr/local/sbin/les ]; then
     LES=true
