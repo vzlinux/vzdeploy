@@ -7,7 +7,7 @@
 #		        release related packages and new kernel
 ## vzdeploy INFO
 
-version="1.2"
+version="1.3"
 
 init_vars()
 {
@@ -469,7 +469,14 @@ if [ "$conversion" = "true" ] ; then
         done
     fi
 
-    if [ $NEED_SOURCE = "YES" ] ; then PKGS="$PKGS gcc make"; KPKGS="$KPKGS $KERNEL-devel"; fi
+    if [ $NEED_SOURCE = "YES" ] ; then 
+        PKGS="$PKGS gcc make"
+        # Workarounds for CentOS being newer than VzLinux
+        yum --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main distro-sync -y glibc glibc-common glibc-devel gcc make 2>&1 | tee -a $log
+        yum install -y yum-utils 2>&1 | tee -a $log
+        repoquery --requires --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates  gcc make | xargs yum --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates distro-sync -y 2>&1 | tee -a $log
+        KPKGS="$KPKGS $KERNEL-devel"
+    fi
 
     if rpm -q subscription-manager 2>&1 > /dev/null; then
         echo "Uninstalling subscription-manager..." | tee -a $log
