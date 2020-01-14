@@ -469,6 +469,9 @@ if [ "$conversion" = "true" ] ; then
         done
     fi
 
+    # Force removal of native kpatch
+    rpm -e --nodeps kpatch > /dev/null 2>&1
+
     if [ $NEED_SOURCE = "YES" ] ; then 
         PKGS="$PKGS gcc make"
         # Workarounds for CentOS being newer than VzLinux
