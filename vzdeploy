@@ -175,7 +175,7 @@ if rpm -q --qf '%{name}\n' `rpm -qa | grep hpahcisr` > /dev/null 2>&1 ; then
 fi
 
 if [ "$skipkmodcheck" = "false" ] ; then
-    if rpm -q --qf '%{name}\n' `rpm -qa | grep ^kmod\-` | grep -v -e iolimits -e aacraid -e megaraid_sas -e1000e -e r8168 -e microsoft -e igb -e libs -e ^kmod$; then
+    if rpm -q --qf '%{name}\n' `rpm -qa | grep ^kmod\-` | grep -v -e iolimits -e aacraid -e megaraid_sas -e1000e -e r8168 -e microsoft -e igb -e libs -e kmod-kvdo -e ^kmod$; then
         echo "You have third-party kernel module rpm installed (see line above)."
         echo "It's not compatible with Virtuozzo Linux kernel."
         echo "Please contact Virtuozzo Linux support at $helpdesk"
