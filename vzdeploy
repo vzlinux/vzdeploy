@@ -488,11 +488,11 @@ if [ "$conversion" = "true" ] ; then
 
     rpm -e --nodeps cpuspeed > /dev/null 2>&1
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $PKGS 2>&1 | tee -a $log
-    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
+    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo support at $helpdesk"
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $KPKGS 2>&1 | tee -a $log
-    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux support at $helpdesk"
+    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo support at $helpdesk"
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --exclude=kernel* update 2>&1 | tee -a $log
-    check_pipestatus 0 "Unable to update packages, please contact Virtuozzo Linux support at $helpdesk"
+    check_pipestatus 0 "Unable to update packages, please contact Virtuozzo support at $helpdesk"
 
     if [ -e /sys/firmware/efi ]; then
         # Bootloader for the previous system is probably dead by now.
