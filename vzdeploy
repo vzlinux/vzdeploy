@@ -1,13 +1,20 @@
 #!/bin/sh
 
+#
+# Copyright (c) 2017-2021 Virtuozzo International GmbH. All rights reserved.
+#
+# Our contact details: Virtuozzo International GmbH, Vordergasse 59, 8200
+# Schaffhausen, Switzerland.
+#
+
 ## vzdeploy INFO
-# Short Description	:upgrades CentOS or RHEL distro to Virtuozzo Linux
+# Short Description	:upgrades CentOS 7 or RHEL 7 distro to Virtuozzo Linux 7
 # Description      	:removes yum repo configuration related to CentOS/RHEL,
 #	  		as well as release related packages. Installs Virtuozzo Linux
 #		        release related packages and new kernel
 ## vzdeploy INFO
 
-version="1.4.1"
+version="1.4.2"
 
 init_vars()
 {
@@ -488,11 +495,11 @@ if [ "$conversion" = "true" ] ; then
 
     rpm -e --nodeps cpuspeed > /dev/null 2>&1
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $PKGS 2>&1 | tee -a $log
-    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo support at $helpdesk"
+    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux team at $helpdesk"
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $KPKGS 2>&1 | tee -a $log
-    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo support at $helpdesk"
+    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux team at $helpdesk"
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --exclude=kernel* update 2>&1 | tee -a $log
-    check_pipestatus 0 "Unable to update packages, please contact Virtuozzo support at $helpdesk"
+    check_pipestatus 0 "Unable to update packages, please contact Virtuozzo Linux team at $helpdesk"
 
     if [ -e /sys/firmware/efi ]; then
         # Bootloader for the previous system is probably dead by now.

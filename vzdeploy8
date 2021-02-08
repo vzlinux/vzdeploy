@@ -1,0 +1,484 @@
+#!/bin/sh
+
+#
+# Copyright (c) 2017-2021 Virtuozzo International GmbH. All rights reserved.
+#
+# Our contact details: Virtuozzo International GmbH, Vordergasse 59, 8200
+# Schaffhausen, Switzerland.
+#
+
+## vzdeploy INFO
+# Short Description	:upgrades CentOS 8 or RHEL 8 distro to Virtuozzo Linux 8
+# Description		:removes yum repo configuration related to CentOS/RHEL,
+#			as well as release related packages. Installs Virtuozzo Linux
+#			release related packages and new kernel
+
+version="2.0.0"
+
+init_vars()
+{
+	log=/var/log/vzdeploy8.log
+	lock=/var/lock/vzdeploy8.lck
+
+	wget="/usr/bin/wget"
+	wget_options="-q"
+	skipkmodcheck=false
+	skipversioncheck=false
+	NO_ARGS=0
+
+	helpdesk="https://bugs.openvz.org"
+
+	# Update checker URL
+	checksite="http://repo.virtuozzo.com/vzlinux/vzdeploy/"
+	checkfile="version8.dat"
+	checkurl="$checksite$checkfile"
+	scriptname="vzdeploy8"
+	upgradeurl="$checksite$scriptname"
+	script="vzdeploy8"
+	dry_run="0"
+	script="$1"
+	case "$script" in
+		./*) script="`pwd`/`basename $script`" ;;
+		/*) script="$script" ;;
+		*) script="`pwd`/$script" ;;
+	esac
+}
+
+check_exit_code()  { if [ $? -ne $1 ]; then echo $2; rm -f $lock; exit 1; fi; }
+check_pipestatus()   { if [ $PIPESTATUS -ne $1 ]; then echo $2; rm -f $lock; exit 1; fi; }
+
+
+yesno()
+# $1 = Message prompt
+# Returns ans=0 for no, ans=1 for yes
+{
+if [ $dry_run -eq 1 ]; then
+    echo "Would be asked here if you wanted to"
+    echo "$1 (y/n - y is assumed)"
+    ans=1
+else
+    ans=2
+fi
+
+while [ $ans -eq 2 ]; do
+    echo -n "Do you want to $1 (y/n) ?" ; read reply
+    case "$reply" in
+        Y*|y*) ans=1 ;;
+        N*|n*) ans=0 ;;
+        *) echo "Please answer y or n" ;;
+    esac
+done
+}
+
+
+download_file()
+# $1 = Full URL to download
+# $2 = Optional basename to save to (if omitted, then = basename $1)
+#      Also allow download to fail without exit if $2 is set
+{
+	if [ "$2" = "" ]; then
+		dlbase="`basename \"$1\"`"
+	else
+		dlbase="$2"
+	fi
+
+	if [ $dry_run -eq 1 ]; then
+		echo "Would download this URL to $tmp_tree/$dlbase :"
+		echo $1 ; echo
+		return
+	fi
+
+	old_dlbase="$dlbase.old"
+	if [ -f "$dlbase" ]; then
+		rm -f "$old_dlbase"
+		mv -f "$dlbase" "$old_dlbase"
+	fi
+
+	echo "Check for wget, install if absent..."
+	rpm -q wget >/dev/null 2>&1 || yum install -y wget
+
+	echo "Downloading $dlbase (please wait)"
+	$wget $wget_options -O "$dlbase" "$1"
+
+	if [ ! -s "$dlbase" ]; then
+		if [ -f "$old_dlbase" ]; then
+			mv -f "$old_dlbase" "$dlbase"
+		fi
+		if [ "$2" = "" ]; then
+			echo "Failed to download $dlbase"
+			rm -f $lock
+			exit 1
+		fi
+	fi
+}
+
+
+check_version()
+# Make sure that we are running the latest version
+# $* = Params passed to script
+{
+	echo "Checking for an update to $scriptname"
+	download_file "$checkurl"
+
+	if [ $dry_run -eq 1 ]; then
+		echo "Would check if this running script (version $version) is out of date."
+		echo "If it's been superseded, the new version would be downloaded and you'd be asked"
+		echo "if you want to upgrade to it and run the new version."
+		echo
+		return
+	fi
+
+	newversion="`cat \"$checkfile\"`"
+	newversion="`echo $newversion`"
+	rm -f "$checkfile"
+
+	if [ "$newversion" = "$version" ]; then
+		echo "$scriptname is already the latest version ($version) - continuing"
+	else
+		echo "New version ($newversion) of $scriptname detected"
+		yesno "download and run $scriptname $newversion now"
+		if [ $ans -eq 1 ]; then
+			echo "OK, downloading and executing $script $*"
+			download_file "$upgradeurl"
+			if [ "$scriptname" -ef "$script" ]; then
+				let a=1
+			else
+				mv -f "$scriptname" "$script"
+			fi
+			chmod u+x "$script"
+			echo "Download of $scriptname $newversion successful"
+			rm -f $lock
+			exec "$script" --skip-version-check $*
+				error "Failed to run $script $*"
+		else
+			echo "New version of script is available: $upgradeurl"
+			echo "Please download new script, review code and run it."
+			echo "If you prefer to use current version, run it with \"--skip-version-check\" key."
+			exit 1
+		fi
+	fi
+}
+
+
+check_kernel_update_permission()
+{
+	if [ -e /etc/yum.conf ] && [ -n "$(grep exclude /etc/yum.conf | grep kernel | grep -v '^#')" ]; then
+		echo Kernel update is prohibited on your system. | tee -a $log
+		echo Remove "exclude kernel" option from /etc/yum.conf | tee -a $log
+		echo and run this script again. | tee -a $log
+		rm -f $lock
+		exit 1;
+	fi;
+
+	if uname -r | grep -v  $KERNEL_VERSION ; then
+		echo "Your server has non-standard kernel installed (see above)" | tee -a $log
+		echo "To resolve the issue, we can unregister this kernel RPM from RPM database." | tee -a $log
+		echo -n "Do you want to do that [Y/N]: " | tee -a $log
+		read YN
+		case $YN in
+			[yY]|[yY][eE][sS])
+				echo "Removing non-standard kernels from RPM database" | tee -a $log
+				rpm -e --justdb `rpm -qa | grep kernel | grep -v $KERNEL_VERSION` 2>&1 | tee -a $log
+				;;
+			*)
+				echo "Please remove non-standard kernels manually and run this script again." | tee -a $log
+				rm -f $lock
+				exit 1
+				;;
+		esac
+	fi
+}
+
+
+check_yum()
+{
+    if [ ! -n "$(cat /etc/yum.conf | sed -e 's/ //g' | grep -i ^"plugins=1")" ]; then
+        echo "Yum error: Plugins are disabled" | tee -a $log
+       echo "Please enable yum-plugins: add string \"plugins=1\" to the /etc/yum.conf" | tee -a $log
+         rm -f $lock
+            exit 1;
+fi;
+}
+
+check_dnf()
+{
+    local config="$(cat /etc/dnf/dnf.conf | sed -e 's/ //g')"
+    if [[ -n "$(echo "${config}" | grep -i ^"plugins=False")" || -n "$(echo "${config}" | grep -i ^"plugins=0")" ]]; then
+        echo "Dnf error: Plugins are disabled" | tee -a $log
+        echo "Please enable dnf-plugins: remove string started with \"plugins=\" from the /etc/dnf/dnf.conf" | tee -a $log
+        rm -f $lock
+        exit 1;
+    fi;
+}
+
+check_release()
+{
+	rpm -q --whatprovides redhat-release > /dev/null 2>&1
+	check_exit_code 0 "There is no package providing /etc/redhat-release, please install redhat-release or centos-release first"
+
+	ARCH=$(uname -i)
+	CPU=$(uname -p)
+
+	OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cut -c 1)"
+	if [ "$OS_VERSION" -eq "8" ]; then
+		KERNEL_VERSION=4.18.0
+		VIRTUOZZO_RELEASE=http://repo-backend.virtuozzo.com/vzlinux/migrate/8/x86_64/vzlinux-release-8.3-3.vl8.x86_64.rpm
+		VIRTUOZZO_LOGOS=http://repo-backend.virtuozzo.com/vzlinux/migrate/8/x86_64/vzlinux-logos-80.5.1-1.vl8.noarch.rpm
+	else
+		echo "This script is for OS version 8 only" | tee -a $log
+		rm -f $lock
+		exit 1;
+	fi;
+}
+
+
+backup()
+{
+	BACKUP=/etc/virtuozzo-convert-saved
+	mkdir -p $BACKUP
+	cp /etc/redhat-release $BACKUP 2>&1 | tee -a $log
+
+	# Disable RedHat
+	if rpm -q subscription-manager > /dev/null; then
+		yum -y erase subscription-manager >> $log 2>&1
+	fi
+	if rpm -q python-vzsubscribe > /dev/null; then
+		yum -y erase python-vzsubscribe >> $log 2>&1
+	fi
+	if [ -f /etc/sysconfig/rhn/systemid ]; then
+		mv /etc/sysconfig/rhn/systemid $BACKUP >> $log 2>&1
+	fi
+	if [ -f /etc/yum/pluginconf.d/rhnplugin.conf ]; then
+		mv /etc/yum/pluginconf.d/rhnplugin.conf $BACKUP >> $log 2>&1
+	fi
+
+	# Disable SL & CentOS
+	for r in sl.repo cd.repo CentOS-AppStream.repo CentOS-Base.repo CentOS-CR.repo \
+		CentOS-Debuginfo.repo CentOS-Extras.repo CentOS-Media.repo CentOS-PowerTools.repo \
+		CentOS-Sources.repo CentOS-Vault.repo CentOS-centosplus.repo CentOS-fasttrack.repo \
+		CentOS-Stream-AppStream.repo CentOS-Stream-Base.repo CentOS-Stream-Debuginfo.repo \
+		CentOS-Stream-Extras.repo CentOS-Stream-Media.repo CentOS-Stream-PowerTools.repo \
+		CentOS-Stream-Sources.repo CentOS-Stream-Vault.repo CentOS-Stream-centosplus.repo
+	do
+		if [ -f /etc/yum.repos.d/${r} ]; then
+			mv /etc/yum.repos.d/${r} $BACKUP >> $log 2>&1
+		fi
+	done
+
+	for p in centos-release centos-release-notes centos-logos rhnlib \
+		redhat-release redhat-release-notes redhat-logos sl-release sl-release-notes
+	do
+		if rpm -q $p > /dev/null; then
+			rpm -e --nodeps $p >> $log 2>&1
+		fi
+	done
+}
+
+prep()
+{
+	yum clean all 2>&1 | tee -a $log
+	rpm --import http://repo.virtuozzo.com/vzlinux/security/VZLINUX_GPG_KEY >> $log 2>&1
+	rpm --import http://repo.virtuozzo.com/vzlinux/security/VIRTUOZZO_GPG_KEY >> $log 2>&1
+	rpm -Uvh $VIRTUOZZO_RELEASE $VIRTUOZZO_LOGOS --force --nodeps >> $log 2>&1 ;
+#    yum localinstall -y "${VIRTUOZZO_RELEASE}" --disablerepo='*' &>> "${log}"
+#    yum localinstall -y "${VIRTUOZZO_LOGOS}" --disablerepo='*' &>> "${log}"
+
+	# Handle LES
+	if [ -x /usr/local/sbin/les ]; then
+		LES=true
+		/usr/local/sbin/les -da 2>&1 | tee -a $log
+		check_pipestatus 0 "Unable to turn off LES, please contact Virtuozzo Linux team at $helpdesk"
+	fi
+}
+
+
+check_source()
+# We need to install kernel-devel for virtual containers
+{
+	NEED_SOURCE="NO"
+	if ! rpm -q pciutils > /dev/null 2>&1; then
+		yum -y install pciutils
+	fi
+	if [ -x /sbin/lspci ] ; then
+		if $(/sbin/lspci -n | grep -q 1414) || $(/sbin/lspci -n | grep -q 15ad) || $(/sbin/lspci -n | grep -q 1ab8); then
+			NEED_SOURCE="YES"
+		fi
+	fi
+}
+
+
+check_root()
+# Root device link
+{
+	if [ ! -e /dev/root ]; then
+		if grep -q ^/ /etc/fstab; then
+			ln -s `awk '{ if ($2 == "/") print $1; }' /etc/fstab` /dev/root
+		fi
+	fi
+}
+
+
+check_efi()
+{
+	if [ -f /boot/efi/EFI/redhat/grub.conf ] ; then
+		if [ "$(readlink /etc/grub.conf)" != "/boot/efi/EFI/redhat/grub.conf" ] || [ "$(readlink /boot/grub/grub.conf)" != "/boot/efi/EFI/redhat/grub.conf" ]; then
+			ln -sf /boot/efi/EFI/redhat/grub.conf /etc/grub.conf
+			ln -sf /boot/efi/EFI/redhat/grub.conf /boot/grub/grub.conf
+		fi
+	fi
+	if [ -f /boot/efi/EFI/centos/grub.conf ] ; then
+		if [ "$(readlink /etc/grub.conf)" != "/boot/efi/EFI/centos/grub.conf" ] || [ "$(readlink /boot/grub/grub.conf)" != "/boot/efi/EFI/centos/grub.conf" ]; then
+			ln -sf /boot/efi/EFI/centos/grub.conf /etc/grub.conf
+			ln -sf /boot/efi/EFI/centos/grub.conf /boot/grub/grub.conf
+		fi
+	fi
+}
+
+
+print_help()
+{
+    cat << EOF >&2
+Usage:
+
+  -h, --help            Print this message
+  --skip-kmod-check     Skip check for unsupported kmods
+  --skip-version-check  Do not check for script updates
+EOF
+}
+
+# Start here ################################################################
+
+init_vars $0
+check_release
+check_dnf
+
+if [ -f $lock ] ; then
+    if [ -d /proc/$(cat $lock) ] ; then
+        echo "$scriptname is already running"
+        exit 1
+    fi
+fi
+
+echo $$ > $lock
+check_exit_code 0 "Please run $scriptname as root"
+
+options=`getopt -o ecmik: -l help,skip-kmod-check,skip-version-check -- "$@"`
+
+if [ $? != 0 ] ; then print_help ; rm -f $lock; exit 1 ; fi
+
+eval set -- "$options"
+
+while true; do
+    case $1 in
+        --help)
+            print_help
+            rm -f $lock
+            exit 0
+            ;;
+        --skip-kmod-check)
+            skipkmodcheck=true
+            shift
+            ;;
+        --skip-version-check)
+            skipversioncheck=true
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            echo "$0: error - unrecognized option $1" 1>&2
+            print_help
+            rm -f $lock
+            exit 1
+            ;;
+         *) echo "Internal error!" ; rm -f $lock; exit 1 ;;
+    esac
+done
+
+if [ "$skipversioncheck" = "false" ]; then
+    check_version
+fi
+
+yesno "continue with deploy"
+if [ $ans -eq 1 ]; then
+    conversion=true
+    echo "Deploy started"
+else
+    conversion=false
+fi
+
+if [ "$conversion" = "true" ] ; then
+    backup
+    prep
+    check_kernel_update_permission
+    check_source
+    check_root
+
+    yum clean all 2>&1 | tee -a $log
+
+#    if rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r) > /dev/null 2>&1 ; then
+#        KERNEL=$(rpm -qf --queryformat "%{name}" /lib/modules/$(uname -r))
+#    else
+#        KERNEL=kernel
+#    fi
+    KERNEL=kernel
+
+    echo "kernel flavour $KERNEL" >> $log
+
+    PKGS="vzlinux-release"
+    KPKGS="$KERNEL"
+    if rpm -qa | grep -q kmod > /dev/null 2>&1 ; then
+        for kmod in `rpm -q --qf '%{name}\n' $(rpm -qa | grep ^kmod\-) | grep -v x86_64 | grep -v i686 | grep -e e1000e -e aacraid -e r8168 -e microsoft -e igb`; do
+            rpm -e --justdb $kmod --nodeps
+            PKGS="$PKGS $kmod"
+        done
+    fi
+
+    if [ $NEED_SOURCE = "YES" ] ; then
+        PKGS="$PKGS gcc make"
+        # Workarounds for CentOS being newer than VzLinux
+        yum --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main distro-sync -y glibc glibc-common glibc-devel gcc make 2>&1 | tee -a $log
+        yum install -y yum-utils 2>&1 | tee -a $log
+        repoquery --requires --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates  gcc make | xargs yum --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates distro-sync -y 2>&1 | tee -a $log
+        KPKGS="$KPKGS $KERNEL-devel"
+    fi
+
+    if rpm -q subscription-manager 2>&1 > /dev/null; then
+        echo "Uninstalling subscription-manager..." | tee -a $log
+        yum -y erase subscription-manager
+    fi
+
+    rpm -e --nodeps cpuspeed > /dev/null 2>&1
+    yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $PKGS 2>&1 | tee -a $log
+    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux team at $helpdesk"
+    yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $KPKGS 2>&1 | tee -a $log
+    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux team at $helpdesk"
+    yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --exclude=kernel* update --nobest 2>&1 | tee -a $log
+    check_pipestatus 0 "Unable to update packages, please contact Virtuozzo Linux team at $helpdesk"
+
+    if [ -e /sys/firmware/efi ]; then
+        # Bootloader for the previous system is probably dead by now.
+        # Generate new grub config and create the new EFI boot entry.
+        # It would be nice to remove the previous EFI entry as well, but we don't know which one it is...
+        grub2-mkconfig > /boot/efi/EFI/virtuozzo/grub.cfg
+        efidir_part="$(grub2-probe --target=device --device-map= /boot/efi)"
+        efidir_part_num="$(echo "$efidir_part" | sed 's/^[^0-9]*//')"
+        efidir_disk="$(echo "$efidir_part" | sed 's/[0-9]\+$//')"
+        efibootmgr -c -L VirtuozzoLinux -d "$efidir_disk" -p "$efidir_part_num" -l /EFI/virtuozzo/shim.efi
+    fi
+
+    # Packages present in VzLinux installation from ISO
+#    VZL_PKGS="libreport-plugin-vzlinux-bugs kpatch bzip2 firewalld teamd"
+#    yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $VZL_PKGS 2>&1 | tee -a $log
+#    check_pipestatus 0 "Unable to install vllicutils and other VzLinux-specific packages, please contact Virtuozzo Linux support at $helpdesk"
+fi
+
+if [ "$LES" = "true" ]; then
+    echo "Linux Environment Security was disabled, you can re-enable it if needed"
+fi
+
+echo "You can find complete log in $log"
+rm -f $lock
+exit 0
