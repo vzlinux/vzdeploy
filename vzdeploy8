@@ -11,9 +11,9 @@
 # Short Description	:upgrades CentOS 8 or RHEL 8 distro to Virtuozzo Linux 8
 # Description		:removes yum repo configuration related to CentOS/RHEL,
 #			as well as release related packages. Installs Virtuozzo Linux
-#			release related packages and new kernel
+#			release related packages and new kernel (unless SKIP_KERNEL is set)
 
-version="2.0.0"
+version="2.0.1"
 
 init_vars()
 {
@@ -221,7 +221,6 @@ check_release()
 
 	OS_VERSION="$(rpm -q --qf %{version} `rpm -q --whatprovides redhat-release` | cut -c 1)"
 	if [ "$OS_VERSION" -eq "8" ]; then
-		KERNEL_VERSION=4.18.0
 		VIRTUOZZO_RELEASE=http://repo-backend.virtuozzo.com/vzlinux/migrate/8/x86_64/vzlinux-release-8.3-3.vl8.x86_64.rpm
 		VIRTUOZZO_LOGOS=http://repo-backend.virtuozzo.com/vzlinux/migrate/8/x86_64/vzlinux-logos-80.5.1-1.vl8.noarch.rpm
 	else
@@ -412,7 +411,7 @@ fi
 if [ "$conversion" = "true" ] ; then
     backup
     prep
-    check_kernel_update_permission
+    [ -z $SKIP_KERNEL ] && check_kernel_update_permission
     check_source
     check_root
 
@@ -423,17 +422,19 @@ if [ "$conversion" = "true" ] ; then
 #    else
 #        KERNEL=kernel
 #    fi
-    KERNEL=kernel
-
-    echo "kernel flavour $KERNEL" >> $log
 
     PKGS="vzlinux-release"
-    KPKGS="$KERNEL"
-    if rpm -qa | grep -q kmod > /dev/null 2>&1 ; then
-        for kmod in `rpm -q --qf '%{name}\n' $(rpm -qa | grep ^kmod\-) | grep -v x86_64 | grep -v i686 | grep -e e1000e -e aacraid -e r8168 -e microsoft -e igb`; do
-            rpm -e --justdb $kmod --nodeps
-            PKGS="$PKGS $kmod"
-        done
+
+    if [ -z $SKIP_KERNEL ]; then
+        KERNEL=kernel
+        echo "kernel flavour $KERNEL" >> $log
+        KPKGS="$KERNEL"
+        if rpm -qa | grep -q kmod > /dev/null 2>&1 ; then
+            for kmod in `rpm -q --qf '%{name}\n' $(rpm -qa | grep ^kmod\-) | grep -v x86_64 | grep -v i686 | grep -e e1000e -e aacraid -e r8168 -e microsoft -e igb`; do
+                rpm -e --justdb $kmod --nodeps
+                PKGS="$PKGS $kmod"
+            done
+        fi
     fi
 
     if [ $NEED_SOURCE = "YES" ] ; then
@@ -442,7 +443,7 @@ if [ "$conversion" = "true" ] ; then
         yum --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main distro-sync -y glibc glibc-common glibc-devel gcc make 2>&1 | tee -a $log
         yum install -y yum-utils 2>&1 | tee -a $log
         repoquery --requires --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates  gcc make | xargs yum --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates distro-sync -y 2>&1 | tee -a $log
-        KPKGS="$KPKGS $KERNEL-devel"
+        [ -z $SKIP_KERNEL ] && KPKGS="$KPKGS $KERNEL-devel"
     fi
 
     if rpm -q subscription-manager 2>&1 > /dev/null; then
@@ -453,8 +454,10 @@ if [ "$conversion" = "true" ] ; then
     rpm -e --nodeps cpuspeed > /dev/null 2>&1
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $PKGS 2>&1 | tee -a $log
     check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux team at $helpdesk"
-    yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $KPKGS 2>&1 | tee -a $log
-    check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux team at $helpdesk"
+    if [ -z $SKIP_KERNEL ]; then
+        yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --disableexcludes=main install $KPKGS 2>&1 | tee -a $log
+        check_pipestatus 0 "Unable to install required packages, please contact Virtuozzo Linux team at $helpdesk"
+    fi
     yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates --exclude=kernel* update --nobest 2>&1 | tee -a $log
     check_pipestatus 0 "Unable to update packages, please contact Virtuozzo Linux team at $helpdesk"
 
