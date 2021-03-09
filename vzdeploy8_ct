@@ -16,6 +16,7 @@ Available options:
 -h, --help      Print this help and exit
 -v, --verbose   Print script debug info
 -p, --ct_id     Some ct_id description
+-n, --nonetwork  Use only if network not available
 EOF
   exit
 }
@@ -44,16 +45,19 @@ die() {
   exit "$code"
 }
 
+
 parse_params() {
   # default values of variables set from params
   ct_id=''
+  nonetwork=0
 
   while :; do
     case "${1-}" in
     -h | --help) usage ;;
     -v | --verbose) set -x ;;
     --no-color) NO_COLOR=1 ;;
-    -p | --ct_id) # container id
+    -n | --nonetwork) nonetwork=1 ;; # flag
+    -c | --ct_id) # container id
       ct_id="${2-}"
       shift
       ;;
@@ -69,17 +73,35 @@ parse_params() {
   return 0
 }
 
+change_distro() {
+CT_VE="/vz/private/${ct_id}/ve.conf"
+if [ -f "${CT_VE}" ]; then
+    sed -i 's!.centos-8-x86_64!vzlinux-8-x86_64!g' "${CT_VE}"
+else 
+    echo "${CT_VE} config does not exist. Exiting"
+    exit;
+fi
+
+}
+
+
 parse_params "$@"
 setup_colors
 
 # script logic here
-
 run_script() {
-vzctl runscript "${ct_id}" /usr/bin/vzdeploy8
+if [ ${nonetwork} -eq "1" ]; then
+	echo "Networking disabled"
+	change_distro
+	vzpkg update "${ct_id}"
+else
+	vzctl runscript "${ct_id}" /usr/bin/vzdeploy8
+fi
 
 }
 
 msg "${RED}INFO:${NOFORMAT}"
 msg "- container id: ${ct_id}"
+msg "- networking: ${nonetwork}"
 run_script
 
