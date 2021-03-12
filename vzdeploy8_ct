@@ -50,6 +50,7 @@ parse_params() {
   # default values of variables set from params
   ct_id=''
   nonetwork=0
+  dryrun=0 
 
   while :; do
     case "${1-}" in
@@ -57,6 +58,7 @@ parse_params() {
     -v | --verbose) set -x ;;
     --no-color) NO_COLOR=1 ;;
     -n | --nonetwork) nonetwork=1 ;; # flag
+    -d | --dry-run) dryrun=1 ;; # flag
     -c | --ct_id) # container id
       ct_id="${2-}"
       shift
@@ -76,7 +78,7 @@ parse_params() {
 change_distro() {
 CT_VE="/vz/private/${ct_id}/ve.conf"
 if [ -f "${CT_VE}" ]; then
-    sed -i 's!.centos-8-x86_64!vzlinux-8-x86_64!g' "${CT_VE}"
+    sed -i 's!centos-8-x86_64!vzlinux-8-x86_64!g' "${CT_VE}"
 else 
     echo "${CT_VE} config does not exist. Exiting"
     exit;
@@ -90,6 +92,15 @@ setup_colors
 
 # script logic here
 run_script() {
+if [ ${dryrun} -eq "1" ]; then
+	change_distro
+	vzpkg update --check-only "${ct_id}"
+	if [ $? -eq 0 ]; then
+		echo "Upgrade is possible"
+	fi
+	sed -i 's!vzlinux-8-x86_64!centos-8-x86_64!g' "/vz/private/${ct_id}/ve.conf"
+	exit;
+fi
 if [ ${nonetwork} -eq "1" ]; then
 	echo "Networking disabled"
 	change_distro
