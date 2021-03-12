@@ -9,23 +9,34 @@ def parse_command_line():
     parser = argparse.ArgumentParser(description='VzLinux Converter')
     parser.add_argument('CT', metavar='CT', nargs='+', help='UUID of container to be converted')
     parser.add_argument('--dry-run', action='store_true', help='Do not perform real pdate, just check if it is possible')
+    parser.add_argument('-q', '--quiet', action='store_true', help='Be quiet')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose')
 
     args = parser.parse_args()
 
-#    parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose, display even debug messages')
 #    parser.add_argument('-c', '--clear-cache', action='store_true', help=_('clear cached information about repositories, platforms, projects, etc.'))
-#    parser.add_argument('-q', '--quiet', action='store_true', help=_('Do not display info messages'))
 
 def process_cts():
     global args
 
     for ct in args.CT:
-        snaps = subprocess.check_output(['prlctl', 'snapshot-list', ct])
-        if b"pre-vzlinu8" in snaps:
-            subprocess.call(['prlctl', 'snapshot-delete', ct, 'pre-vzlinux8'])
-        subprocess.call(['prlctl', 'snapshot', ct, 'pre-vzlinux8'])
+        if not args.dry_run:
+            subprocess.call(['prlctl', 'snapshot', ct, '-n', 'pre-vzlinux8'])
 
-        subprocess.call(['/bin/vzdeploy8_ct', ct])
+        vzdeploy_args = ['-n']
+        if args.quiet:
+            vzdeploy_args.append('-q')
+        elif args.verbose:
+            vzdeploy_args.append('-v')
+        if args.dry_run:
+            vzdeploy_args.append('-d')
+
+        vzdeploy_args.append('-c')
+        vzdeploy_args.append(ct)
+
+        print("Container: " + ct)
+        subprocess.call(['/bin/vzdeploy8_ct'] + vzdeploy_args)
+
 
 if __name__ == '__main__':
     parse_command_line()

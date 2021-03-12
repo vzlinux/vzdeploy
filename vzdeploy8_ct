@@ -50,15 +50,19 @@ parse_params() {
   # default values of variables set from params
   ct_id=''
   nonetwork=0
-  dryrun=0 
+  dryrun=0
+  debug=0
+  quiet=''
+  verbose=''
 
   while :; do
     case "${1-}" in
     -h | --help) usage ;;
-    -v | --verbose) set -x ;;
+    -v | --verbose) debug=5; verbose='--verbose'; set -x ;;
     --no-color) NO_COLOR=1 ;;
     -n | --nonetwork) nonetwork=1 ;; # flag
     -d | --dry-run) dryrun=1 ;; # flag
+    -q | --quiet) quiet='--quiet' ;; # flag
     -c | --ct_id) # container id
       ct_id="${2-}"
       shift
@@ -94,7 +98,7 @@ setup_colors
 run_script() {
 if [ ${dryrun} -eq "1" ]; then
 	change_distro
-	vzpkg update --check-only "${ct_id}"
+	vzpkg update $quiet -d $debug --check-only "${ct_id}"
 	if [ $? -eq 0 ]; then
 		echo "Upgrade is possible"
 	fi
@@ -104,15 +108,17 @@ fi
 if [ ${nonetwork} -eq "1" ]; then
 	echo "Networking disabled"
 	change_distro
-	vzpkg update "${ct_id}"
+	vzpkg $quiet -d $debug "${ct_id}"
 else
-	vzctl runscript "${ct_id}" /usr/bin/vzdeploy8
+	vzctl $quiet $verbose runscript "${ct_id}" /usr/bin/vzdeploy8
 fi
 
 }
 
-msg "${RED}INFO:${NOFORMAT}"
-msg "- container id: ${ct_id}"
-msg "- networking: ${nonetwork}"
+if [[ $quiet != '--quiet' ]]; then
+    msg "${RED}INFO:${NOFORMAT}"
+    msg "- container id: ${ct_id}"
+    msg "- networking: ${nonetwork}"
+fi
 run_script
 
