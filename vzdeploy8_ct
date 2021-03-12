@@ -108,7 +108,7 @@ fi
 if [ ${nonetwork} -eq "1" ]; then
 	echo "Networking disabled"
 	change_distro
-	vzpkg $quiet -d $debug "${ct_id}"
+	vzpkg update $quiet -d $debug "${ct_id}"
 else
 	vzctl $quiet $verbose runscript "${ct_id}" /usr/bin/vzdeploy8
 fi
