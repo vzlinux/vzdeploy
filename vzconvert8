@@ -20,6 +20,11 @@ def process_cts():
     global args
 
     for ct in args.CT:
+        snaps = subprocess.check_output(['prlctl', 'snapshot-list', ct])
+        if b"pre-vzlinu8" in snaps:
+            subprocess.call(['prlctl', 'snapshot-delete', ct, 'pre-vzlinux8'])
+        subprocess.call(['prlctl', 'snapshot', ct, 'pre-vzlinux8'])
+
         subprocess.call(['/bin/vzdeploy8_ct', ct])
 
 if __name__ == '__main__':
