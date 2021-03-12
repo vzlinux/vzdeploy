@@ -1,0 +1,27 @@
+#!/usr/bin/python3
+
+import argparse
+import subprocess
+
+def parse_command_line():
+    global args
+
+    parser = argparse.ArgumentParser(description='VzLinux Converter')
+    parser.add_argument('CT', metavar='CT', nargs='+', help='UUID of container to be converted')
+    parser.add_argument('--dry-run', action='store_true', help='Do not perform real pdate, just check if it is possible')
+
+    args = parser.parse_args()
+
+#    parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose, display even debug messages')
+#    parser.add_argument('-c', '--clear-cache', action='store_true', help=_('clear cached information about repositories, platforms, projects, etc.'))
+#    parser.add_argument('-q', '--quiet', action='store_true', help=_('Do not display info messages'))
+
+def process_cts():
+    global args
+
+    for ct in args.CT:
+        subprocess.call(['/bin/vzdeploy8_ct', ct])
+
+if __name__ == '__main__':
+    parse_command_line()
+    process_cts()
