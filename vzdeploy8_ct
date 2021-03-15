@@ -114,7 +114,7 @@ fi
 
 }
 
-if [[ $quiet != '--quiet' ]]; then
+if [[ $verbose == '--verbose' ]]; then
     msg "${RED}INFO:${NOFORMAT}"
     msg "- container id: ${ct_id}"
     msg "- networking: ${nonetwork}"

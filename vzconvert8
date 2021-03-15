@@ -99,18 +99,32 @@ def check_repos(ctid):
     try:
         dnf_out = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, 'dnf', 'repolist', 'enabled'])
     except Exception as e:
-        log_info("Can't check free space inside container! " + str(e))
+        log_info("Can't check repositories inside container! " + str(e))
         return False
 
     for l in dnf_out.decode('utf-8').split("\n"):
         if "repo name" in l:
             continue
         repo_id = l.split(" ")[0]
-        if repo_id not in SUPPORTED_REPOS:
-            log_info("No enough free space inside container, must have at least 1Gb")
+        if repo_id and repo_id not in SUPPORTED_REPOS:
+            log_info("The following repository is enabled inside the CT but not supported by upgrade: " + str(repo_id))
             return False
 
     return True
+
+'''
+Get list of ports open inside CT.
+We get list of ports using lsof (since netstat is not available by default)
+For every port we save command, protocol, node and port number
+'''
+def get_open_ports(ctid):
+    l = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, '/bin/lsof', '-Pi'])
+    all_ports = []
+    for p in l.decode('utf-8').split('\n'):
+        data = p.split()
+        if len(data) > 8:
+            all_ports.append((data[0], data[4], data[7], data[8]))
+    return all_ports
 
 
 def process_cts():
@@ -155,6 +169,7 @@ def process_cts():
             old_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
             old_pkg_list = old_pkg_list_raw.split("\n")
             old_pkg_list = [p.split(" ")[0] for p in old_pkg_list]
+            old_ports_list = sorted(set(get_open_ports(ct)))
 
 
         vzdeploy_args = ['-n']
@@ -169,17 +184,19 @@ def process_cts():
         vzdeploy_args.append(ct)
 
         log_info("Container: " + ct)
-        print(vzdeploy_args)
         vzdeploy_out = subprocess.check_output(['/bin/vzdeploy8_ct'] + vzdeploy_args)
         log_info(vzdeploy_out.decode('utf-8'))
         if not args.dry_run:
             new_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
             new_pkg_list = subprocess.check_output(['/sbin/vzpkg', 'list', '-p', ct]).decode('utf-8').split("\n")
             new_pkg_list = [p.split(" ")[0] for p in new_pkg_list]
+            new_ports_list = sorted(set(get_open_ports(ct)))
             added_pkgs = [p for p in new_pkg_list if p.replace("vl7", "el7") not in old_pkg_list and p not in ADDED_PKGS_IGNORE]
             removed_pkgs = [p for p in old_pkg_list if p.replace("el7", "vl7") not in new_pkg_list and p not in DROPPED_PKGS_IGNORE]
             added_ps = [p for p in new_proc_list if p not in old_proc_list and p not in CHANGED_PS_IGNORE]
             removed_ps = [p for p in old_proc_list if p not in new_proc_list and p not in CHANGED_PS_IGNORE]
+            added_ports = [p for p in new_ports_list if p not in old_ports_list]
+            removed_ports = [p for p in old_ports_list if p not in new_ports_list]
             if added_pkgs:
                 log_info("!!! WARNING: !!!")
                 log_info("The following packages have been added with respect to CentOS 8:")
@@ -190,12 +207,20 @@ def process_cts():
                 log_info(removed_pkgs)
             if added_ps:
                 log_info("!!! WARNING: !!!")
-                log_info("The following processes became active  with respect to CentOS 8:")
+                log_info("The following processes became active with respect to CentOS 8:")
                 log_info(added_ps)
             if removed_ps:
                 log_info("!!! WARNING: !!!")
                 log_info("The following processes became inactive with respect to CentOS 8:")
                 log_info(removed_ps)
+            if added_ports:
+                log_info("!!! WARNING: !!!")
+                log_info("The following ports became open with respect to CentOS 8:")
+                log_info(added_ports)
+            if removed_ports:
+                log_info("!!! WARNING: !!!")
+                log_info("The following ports became closed with respect to CentOS 8:")
+                log_info(removed_ports)
 
     if args.log:
         f.close()
