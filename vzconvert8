@@ -3,6 +3,45 @@
 import argparse
 import subprocess
 
+# It is ok for these packages to be added due to differences between vzlinux8 and centos8 templates
+# and default vzlinux requirements
+ADDED_PKGS_IGNORE = ['annobin.x86_64', 'cpp.x86_64', 'dnf-plugins-core.noarch', 'fstrm.x86_64', 'gcc.x86_64',
+                 'glibc-devel.x86_64', 'glibc-headers.x86_64', 'hwdata.noarch', 'isl.x86_64', 'kernel-headers.x86_64',
+                 'libgomp.x86_64', 'libibverbs.x86_64', 'libmpc.x86_64', 'libnl3.x86_64', 'libpkgconf.x86_64',
+                 'libxcrypt-devel.x86_64', 'lmdb-libs.x86_64', 'pciutils-libs.x86_64', 'pciutils.x86_64', 'pkgconf-m4.noarch',
+                 'pkgconf-pkg-config.x86_64', 'pkgconf.x86_64', 'protobuf-c.x86_64', 'python3-dateutil.noarch',
+                 'python3-dnf-plugins-core.noarch', 'rdma-core.x86_64', 'vzlinux-release.x86_64', 'zstd.x86_64',
+                 'vzlinux-logos.noarch', 'vzlinux-logos-httpd.noarch']
+
+# The following packages are ok to drop - they are replaced by vzlinux ones
+DROPPED_PKGS_IGNORE = ['centos-linux-release.noarch', 'centos-linux-repos.noarch', 'centos-logos-httpd.noarch', 'centos-logos.noarch', 'centos-gpg-keys.noarch']
+
+# There is no harm if some processes became active/inacitve after upgrade.
+# mandb & logrotate can be launched by cron;
+# 'sh' also comes from rpm_clean cron task.
+# 'systemct' (there is no typo here) looks like a ghost in vzps output
+CHANGED_PS_IGNORE = ['mandb', 'sh', 'systemct']
+
+# Forbid update if found installed package containing one of the followinf strings in name
+BLOCKER_PKGS = {'plesk': 'Plesk', 'cpanel': 'cPanel'}
+
+# Minimum free space we want to see inside the container
+SPACE_LIMIT = 1000000
+
+SUPPORTED_REPOS = ['appstream', 'baseos', 'extras', 'powertools', 'epel', 'epel-modular']
+
+'''
+Simple log wrapper to print messages to eithe STDOUT or to logfile
+'''
+def log_info(msg):
+    global logfile
+
+    if logfile:
+        logfile.write(msg + "\n")
+    else:
+        print(msg)
+
+
 def parse_command_line():
     global args
 
@@ -11,17 +50,112 @@ def parse_command_line():
     parser.add_argument('--dry-run', action='store_true', help='Do not perform real pdate, just check if it is possible')
     parser.add_argument('-q', '--quiet', action='store_true', help='Be quiet')
     parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose')
+    parser.add_argument('--log', help='Dump all messages to the specified log file')
+    parser.add_argument('--strict', action='store_true', help='Strict mode: some precheck warnings will be treated as upgrade blockers')
 
     args = parser.parse_args()
 
 #    parser.add_argument('-c', '--clear-cache', action='store_true', help=_('clear cached information about repositories, platforms, projects, etc.'))
 
+def check_config(ctid):
+    try:
+        f = open("/vz/private/" + ctid + "/ve.conf", "r")
+    except Exception as e:
+        log_info("Can't check CT config: " + str(e))
+        return False
+
+    for l in f.readlines():
+        if 'OSTEMPLATE=".centos-8-x86_64"' in l or 'OSTEMPLATE="centos-8-x86_64"' in l:
+            f.close()
+            return True
+
+    f.close()
+    return False
+
+
+'''
+Check if we have enough free space inside container.
+Return False if not (or when can't check), True if yes
+'''
+def check_space(ctid):
+    df_out = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, 'df', '--output=avail', '/'])
+    for l in df_out.decode('utf-8').split("\n"):
+        if "vail" in l:
+            continue
+        free_space = int(l)
+        if free_space < SPACE_LIMIT:
+            log_info("No enough free space inside container, must have at least 1Gb")
+            return False
+        else:
+            return True
+    log_info("Can't check free space inside container!")
+    return False
+
+'''
+Check if we have enabled repos not supported by upgrade.
+Return False if yes (or when can't check), True if no
+'''
+def check_repos(ctid):
+    try:
+        dnf_out = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, 'dnf', 'repolist', 'enabled'])
+    except Exception as e:
+        log_info("Can't check free space inside container! " + str(e))
+        return False
+
+    for l in dnf_out.decode('utf-8').split("\n"):
+        if "repo name" in l:
+            continue
+        repo_id = l.split(" ")[0]
+        if repo_id not in SUPPORTED_REPOS:
+            log_info("No enough free space inside container, must have at least 1Gb")
+            return False
+
+    return True
+
+
 def process_cts():
     global args
+    global logfile
+
+    logfile = None
+    if args.log:
+        f = open(args.log, "w")
 
     for ct in args.CT:
+        old_pkg_list_raw = subprocess.check_output(['/sbin/vzpkg', 'list', '-p', ct]).decode('utf-8')
+        proceed = True
+        for b in BLOCKER_PKGS:
+            if b in old_pkg_list_raw:
+                log_info("!!! Upgrade forbidden !!! We have detected a software which doesn't support VzLinux8 yet: " + BLOCKER_PKGS[b])
+                proceed = False
+        if not proceed:
+            continue
+
+        if not check_space(ct):
+            if not args.strict:
+                log_info("!!! WARNING !!! Failed to ensure that we have enough free space inside CT")
+            else:
+                log_info("!!! Upgrade forbidden !!! Failed to ensure that we have enough free space inside CT")
+                continue
+
+        if not check_repos(ct):
+            if not args.strict:
+                log_info("!!! WARNING !!! CT seems to contain repositories not supported by upgrade")
+            else:
+                log_info("!!! Upgrade forbidden !!! CT seems to contain repositories not supported by upgrade")
+                continue
+
+        if not check_config(ct):
+            log_info("!!! Upgrade forbidden !!! OSTEMPLATE of the container is not supported")
+            continue
+
         if not args.dry_run:
-            subprocess.call(['prlctl', 'snapshot', ct, '-n', 'pre-vzlinux8'])
+            snaphost_out = subprocess.check_output(['/bin/prlctl', 'snapshot', ct, '-n', 'pre-vzlinux8'])
+            log_info(snaphost_out.decode('utf-8'))
+            old_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
+            old_pkg_list = old_pkg_list_raw.split("\n")
+            old_pkg_list = [p.split(" ")[0] for p in old_pkg_list]
+
 
         vzdeploy_args = ['-n']
         if args.quiet:
@@ -34,8 +168,37 @@ def process_cts():
         vzdeploy_args.append('-c')
         vzdeploy_args.append(ct)
 
-        print("Container: " + ct)
-        subprocess.call(['/bin/vzdeploy8_ct'] + vzdeploy_args)
+        log_info("Container: " + ct)
+        print(vzdeploy_args)
+        vzdeploy_out = subprocess.check_output(['/bin/vzdeploy8_ct'] + vzdeploy_args)
+        log_info(vzdeploy_out.decode('utf-8'))
+        if not args.dry_run:
+            new_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
+            new_pkg_list = subprocess.check_output(['/sbin/vzpkg', 'list', '-p', ct]).decode('utf-8').split("\n")
+            new_pkg_list = [p.split(" ")[0] for p in new_pkg_list]
+            added_pkgs = [p for p in new_pkg_list if p.replace("vl7", "el7") not in old_pkg_list and p not in ADDED_PKGS_IGNORE]
+            removed_pkgs = [p for p in old_pkg_list if p.replace("el7", "vl7") not in new_pkg_list and p not in DROPPED_PKGS_IGNORE]
+            added_ps = [p for p in new_proc_list if p not in old_proc_list and p not in CHANGED_PS_IGNORE]
+            removed_ps = [p for p in old_proc_list if p not in new_proc_list and p not in CHANGED_PS_IGNORE]
+            if added_pkgs:
+                log_info("!!! WARNING: !!!")
+                log_info("The following packages have been added with respect to CentOS 8:")
+                log_info(added_pkgs)
+            if removed_pkgs:
+                log_info("!!! WARNING: !!!")
+                log_info("The following packages have been removed with respect to CentOS 8:")
+                log_info(removed_pkgs)
+            if added_ps:
+                log_info("!!! WARNING: !!!")
+                log_info("The following processes became active  with respect to CentOS 8:")
+                log_info(added_ps)
+            if removed_ps:
+                log_info("!!! WARNING: !!!")
+                log_info("The following processes became inactive with respect to CentOS 8:")
+                log_info(removed_ps)
+
+    if args.log:
+        f.close()
 
 
 if __name__ == '__main__':
