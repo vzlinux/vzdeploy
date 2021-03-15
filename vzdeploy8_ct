@@ -106,7 +106,6 @@ if [ ${dryrun} -eq "1" ]; then
 	exit;
 fi
 if [ ${nonetwork} -eq "1" ]; then
-	echo "Networking disabled"
 	change_distro
 	vzpkg update $quiet -d $debug "${ct_id}"
 else
