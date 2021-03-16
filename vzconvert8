@@ -187,6 +187,7 @@ def process_cts():
         vzdeploy_out = subprocess.check_output(['/bin/vzdeploy8_ct'] + vzdeploy_args)
         log_info(vzdeploy_out.decode('utf-8'))
         if not args.dry_run:
+            save_timestamp(ctid)
             new_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
             new_pkg_list = subprocess.check_output(['/sbin/vzpkg', 'list', '-p', ct]).decode('utf-8').split("\n")
             new_pkg_list = [p.split(" ")[0] for p in new_pkg_list]
@@ -225,7 +226,15 @@ def process_cts():
     if args.log:
         f.close()
 
+'''
+Save upgrade timestamp inside container.
+Useful for CEP to know that the container was upgraded
+'''
+def save_timestamp(ctid):
+    subprocess.call(['/sbin/vzctl', 'exec', ctid, '/bin/touch', '/var/log/vzconvert8.stamp'])
+
 
 if __name__ == '__main__':
     parse_command_line()
     process_cts()
+    save_timestamp()
