@@ -53,7 +53,7 @@ def parse_command_line():
     list_parser.set_defaults(func=get_upgradable)
 
     upgrade_parser = subs.add_parser('convert', help='Convert given containers for VzLinux 8')
-    upgrade_parser.add_argument('CT', metavar='CT', nargs='+', help='UUID of container to be converted')
+    upgrade_parser.add_argument('CT', metavar='CT', nargs='+', help='UUID or CTID or name of container to be converted')
     upgrade_parser.add_argument('--dry-run', action='store_true', help='Do not perform real conversion, just check if it is possible')
     upgrade_parser.add_argument('-q', '--quiet', action='store_true', help='Be quiet')
     upgrade_parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose')
