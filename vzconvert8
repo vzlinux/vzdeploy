@@ -46,19 +46,19 @@ def parse_command_line():
     global args
 
     parser = argparse.ArgumentParser(description='VzLinux Converter')
-    subs = parser.add_subparsers(dest='list or upgrade')
+    subs = parser.add_subparsers(dest='list or convert')
     subs.required = True
 
-    list_parser = subs.add_parser('list', help='List CentOS 8 containers that can be subjected for upgrade')
+    list_parser = subs.add_parser('list', help='List CentOS 8 containers that can be subjected for convesion')
     list_parser.set_defaults(func=get_upgradable)
 
-    upgrade_parser = subs.add_parser('upgrade', help='Upgrade given containers for VzLinux 8')
+    upgrade_parser = subs.add_parser('convert', help='Convert given containers for VzLinux 8')
     upgrade_parser.add_argument('CT', metavar='CT', nargs='+', help='UUID of container to be converted')
-    upgrade_parser.add_argument('--dry-run', action='store_true', help='Do not perform real pdate, just check if it is possible')
+    upgrade_parser.add_argument('--dry-run', action='store_true', help='Do not perform real conversion, just check if it is possible')
     upgrade_parser.add_argument('-q', '--quiet', action='store_true', help='Be quiet')
     upgrade_parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose')
     upgrade_parser.add_argument('--log', help='Dump all messages to the specified log file')
-    upgrade_parser.add_argument('--strict', action='store_true', help='Strict mode: some precheck warnings will be treated as upgrade blockers')
+    upgrade_parser.add_argument('--strict', action='store_true', help='Strict mode: some precheck warnings will be treated as conversion blockers')
     upgrade_parser.set_defaults(func=process_cts)
 
     args = parser.parse_args()
@@ -117,7 +117,7 @@ def check_repos(ctid):
             continue
         repo_id = l.split(" ")[0]
         if repo_id and repo_id not in SUPPORTED_REPOS:
-            log_info("The following repository is enabled inside the CT but not supported by upgrade: " + str(repo_id))
+            log_info("The following repository is enabled inside the CT but not supported by conversion tools: " + str(repo_id))
             return False
 
     return True
@@ -136,8 +136,15 @@ def get_open_ports(ctid):
             all_ports.append((data[0], data[4], data[7], data[8]))
     return all_ports
 
+def try_stop_ct(ctid):
+    try:
+        res = subprocess.check_output(['/sbin/vzctl', 'stop', ct]).decode('utf-8')
+        log_info(res)
+    except Exception as e:
+        log_info("Failed to stop CT: " + str(e))
+
 '''
-Perform upgrade of containers specified in cmdline
+Perform conversion of containers specified in cmdline
 '''
 def process_cts():
     global args
@@ -148,32 +155,56 @@ def process_cts():
         f = open(args.log, "w")
 
     for ct in args.CT:
+        ctid = subprocess.check_output(['/sbin/vzlist', '-o', 'ctid', ct]).decode('utf-8')
+        for l in ctid.split("\n"):
+            if 'CTID' not in l:
+                ct = str(l)
+                break
+
+        if not check_config(ct):
+            log_info("!!! Conversion forbidden !!! OSTEMPLATE of the container is not supported")
+            continue
+
+        need_stop = False
+        ct_state = subprocess.check_output(['/sbin/vzctl', 'status', ct]).decode('utf-8')
+        if not "running" in ct_state:
+            log_info("Container is stopeed, starting...")
+            try:
+                res = subprocess.check_output(['/sbin/vzctl', 'start', ct]).decode('utf-8')
+                log_info(res)
+            except Exception as e:
+                log_info("Failed to start: " + str(e))
+                continue
+            need_stop = True
+
         old_pkg_list_raw = subprocess.check_output(['/sbin/vzpkg', 'list', '-p', ct]).decode('utf-8')
         proceed = True
         for b in BLOCKER_PKGS:
             if b in old_pkg_list_raw:
-                log_info("!!! Upgrade forbidden !!! We have detected a software which doesn't support VzLinux8 yet: " + BLOCKER_PKGS[b])
+                log_info("!!! Conversion forbidden !!! We have detected a software which doesn't support VzLinux8 yet: " + BLOCKER_PKGS[b])
                 proceed = False
         if not proceed:
+            if need_stop:
+                try_stop_ct(ctid)
             continue
 
         if not check_space(ct):
             if not args.strict:
                 log_info("!!! WARNING !!! Failed to ensure that we have enough free space inside CT")
             else:
-                log_info("!!! Upgrade forbidden !!! Failed to ensure that we have enough free space inside CT")
+                log_info("!!! Conversion forbidden !!! Failed to ensure that we have enough free space inside CT")
+                if need_stop:
+                    try_stop_ct(ctid)
                 continue
 
         if not check_repos(ct):
             if not args.strict:
-                log_info("!!! WARNING !!! CT seems to contain repositories not supported by upgrade")
+                log_info("!!! WARNING !!! CT seems to contain repositories not supported by conversion tools")
             else:
-                log_info("!!! Upgrade forbidden !!! CT seems to contain repositories not supported by upgrade")
+                log_info("!!! Conversion forbidden !!! CT seems to contain repositories not supported by conversion tools")
+                if need_stop:
+                    try_stop_ct(ctid)
                 continue
-
-        if not check_config(ct):
-            log_info("!!! Upgrade forbidden !!! OSTEMPLATE of the container is not supported")
-            continue
 
         if not args.dry_run:
             snaphost_out = subprocess.check_output(['/bin/prlctl', 'snapshot', ct, '-n', 'pre-vzlinux8'])
@@ -199,7 +230,7 @@ def process_cts():
         vzdeploy_out = subprocess.check_output(['/bin/vzdeploy8_ct'] + vzdeploy_args)
         log_info(vzdeploy_out.decode('utf-8'))
         if not args.dry_run:
-            save_timestamp(ctid)
+            save_timestamp(ct)
             new_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
             new_pkg_list = subprocess.check_output(['/sbin/vzpkg', 'list', '-p', ct]).decode('utf-8').split("\n")
             new_pkg_list = [p.split(" ")[0] for p in new_pkg_list]
@@ -235,12 +266,15 @@ def process_cts():
                 log_info("The following ports became closed with respect to CentOS 8:")
                 log_info(removed_ports)
 
+        if need_stop:
+            try_stop_ct(ct)
+
     if args.log:
         f.close()
 
 '''
-Save upgrade timestamp inside container.
-Useful for CEP to know that the container was upgraded
+Save conversion timestamp inside container.
+Useful for CEP to know that the container was converted
 '''
 def save_timestamp(ctid):
     subprocess.call(['/sbin/vzctl', 'exec', ctid, '/bin/touch', '/var/log/vzconvert8.stamp'])
