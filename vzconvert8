@@ -58,6 +58,7 @@ def parse_command_line():
     upgrade_parser.add_argument('-q', '--quiet', action='store_true', help='Be quiet')
     upgrade_parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose')
     upgrade_parser.add_argument('--log', help='Dump all messages to the specified log file')
+    upgrade_parser.add_argument('--parallel', metavar='parallel', type=int, choices=range(1, 101), nargs='?', help='Number of simultaneous concurrent conversions')
     upgrade_parser.add_argument('--strict', action='store_true', help='Strict mode: some precheck warnings will be treated as conversion blockers')
     upgrade_parser.set_defaults(func=process_cts)
 
@@ -106,7 +107,7 @@ def check_space(ctid):
             continue
         free_space = int(l)
         if free_space < SPACE_LIMIT:
-            log_info("No enough free space inside container, must have at least 1Gb")
+            log_info("Not enough free space inside container, must have at least 1Gb")
             return False
         else:
             return True
