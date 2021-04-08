@@ -68,8 +68,19 @@ def parse_command_line():
 Check CT config - if OSTEMPLATE is set to centos-8
 '''
 def check_config(ctid):
+    vz_private = None
     try:
-        f = open("/vz/private/" + ctid + "/ve.conf", "r")
+        with open("/etc/vz/vz.conf") as f:
+            for l in f.readlines():
+                if l.startswith("VE_PRIVATE"):
+                    vz_private = l.split("=")[1].replace('/$VEID', '')
+                    break
+    except Exception as e:
+        log_info("Can't check CT config: " + str(e))
+        return False
+
+    try:
+        f = open(vz_private + "/" + ctid + "/ve.conf", "r")
     except Exception as e:
         log_info("Can't check CT config: " + str(e))
         return False
