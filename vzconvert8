@@ -183,7 +183,7 @@ def process_cts():
         if not "running" in ct_state:
             log_info("Container is stopeed, starting...")
             try:
-                res = subprocess.check_output(['/sbin/vzctl', 'start', ct]).decode('utf-8')
+                res = subprocess.check_output(['/sbin/vzctl', 'start', ct, '--wait']).decode('utf-8')
                 log_info(res)
             except Exception as e:
                 log_info("Failed to start: " + str(e))
