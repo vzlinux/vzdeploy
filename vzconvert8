@@ -33,12 +33,12 @@ SUPPORTED_REPOS = ['appstream', 'baseos', 'extras', 'powertools', 'epel', 'epel-
 '''
 Simple log wrapper to print messages to eithe STDOUT or to logfile
 '''
-def log_info(msg):
+def log_info(msg, printstd = True):
     global logfile
 
     if logfile:
         logfile.write(msg + "\n")
-    else:
+    elif printstd:
         print(msg)
 
 
@@ -74,7 +74,7 @@ def check_config(ctid):
         with open("/etc/vz/vz.conf") as f:
             for l in f.readlines():
                 if l.startswith("VE_PRIVATE"):
-                    vz_private = l.split("=")[1].replace('/$VEID', '')
+                    vz_private = l.strip().split("=")[1].replace('/$VEID', '')
                     break
     except Exception as e:
         log_info("Can't check CT config: " + str(e))
@@ -240,8 +240,16 @@ def process_cts():
         vzdeploy_args.append(ct)
 
         log_info("Container: " + ct)
-        vzdeploy_out = subprocess.check_output(['/bin/vzdeploy8_ct'] + vzdeploy_args)
-        log_info(vzdeploy_out.decode('utf-8'))
+        pr = subprocess.Popen(['/bin/vzdeploy8_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        for l in iter(pr.stdout.readline, b''):
+            print(l)
+            vzdeploy_out += l
+        for l in iter(pr.stderr.readline, b''):
+            if 'warning: rpmdb:' in l or 'ERROR: ld.so:' in l:
+                continue
+            print(l)
+            vzdeploy_out += l
+        log_info(vzdeploy_out, False)
         if not args.dry_run:
             save_timestamp(ct)
             new_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
