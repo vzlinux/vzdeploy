@@ -74,7 +74,7 @@ def check_config(ctid):
         with open("/etc/vz/vz.conf") as f:
             for l in f.readlines():
                 if l.startswith("VE_PRIVATE"):
-                    vz_private = l.strip().split("=")[1].replace('/$VEID', '')
+                    vz_private = l.strip().split("=")[1].replace('/$VEID', '').replace('"', '').replace("'", '')
                     break
     except Exception as e:
         log_info("Can't check CT config: " + str(e))
