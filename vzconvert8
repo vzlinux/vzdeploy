@@ -36,7 +36,7 @@ Simple log wrapper to print messages to eithe STDOUT or to logfile
 def log_info(msg):
     global logfile
 
-    for l in msg.split('\n'):
+    for l in str(msg).split('\n'):
         if 'warning: rpmdb:' in l or 'ERROR: ld.so:' in l:
             continue
         if logfile:
