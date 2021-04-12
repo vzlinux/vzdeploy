@@ -243,7 +243,7 @@ def process_cts():
         vzdeploy_args.append(ct)
 
         log_info("Container: " + ct)
-        vzdeploy_out = subprocess.check_output(['/bin/vzdeploy8_ct'] + vzdeploy_args)
+        vzdeploy_out = subprocess.check_output(['/bin/vzdeploy8_ct'] + vzdeploy_args, stderr=subprocess.STDOUT)
         log_info(vzdeploy_out.decode('utf-8'))
 #        pr = subprocess.Popen(['/bin/vzdeploy8_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 #        vzdeploy_out = ''
