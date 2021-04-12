@@ -168,7 +168,7 @@ def process_cts():
 
     logfile = None
     if args.log:
-        f = open(args.log, "w")
+        logfile = open(args.log, "w")
 
     for ct in args.CT:
         ctid = subprocess.check_output(['/sbin/vzlist', '-o', 'ctid', ct]).decode('utf-8')
@@ -298,7 +298,7 @@ def process_cts():
             try_stop_ct(ct)
 
     if args.log:
-        f.close()
+        logfile.close()
 
 '''
 Save conversion timestamp inside container.
