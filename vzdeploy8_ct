@@ -51,7 +51,7 @@ parse_params() {
   ct_id=''
   nonetwork=0
   dryrun=0
-  debug=0
+  debug=1
   quiet=''
   verbose=''
 
