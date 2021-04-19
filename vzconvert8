@@ -5,6 +5,7 @@ import subprocess
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import threading
+import sys
 
 # It is ok for these packages to be added due to differences between vzlinux8 and centos8 templates
 # and default vzlinux requirements
@@ -46,8 +47,8 @@ def log_info(msg):
             continue
         if logfile:
             logfile.write(l + "\n")
-        else:
-            print(l)
+        print(l)
+        sys.stdout.flush()
     lock.release()
 
 
@@ -268,19 +269,15 @@ def process_single_ct(ct):
     vzdeploy_args.append(ct)
 
     log_info("Starting converting: " + ct)
-    vzdeploy_out = subprocess.check_output(['/bin/vzdeploy8_ct'] + vzdeploy_args, stderr=subprocess.STDOUT)
-    log_info(ct + ": " + vzdeploy_out.decode('utf-8'))
-#    pr = subprocess.Popen(['/bin/vzdeploy8_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-#    vzdeploy_out = ''
-#    for l in iter(pr.stdout.readline, b''):
-#        print(l)
-#        vzdeploy_out += l
-#    for l in iter(pr.stderr.readline, b''):
-#        if 'warning: rpmdb:' in l or 'ERROR: ld.so:' in l:
-#            continue
-#        print(l)
-#        vzdeploy_out += l
-#    log_info(vzdeploy_out, False)
+    pr = subprocess.Popen(['/bin/vzdeploy8_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+    while True:
+        l = pr.stdout.readline()
+        if l == '' and pr.poll() != None:
+            break
+        if 'warning: rpmdb:' in l or 'ERROR: ld.so:' in l:
+            continue
+        if l:
+            log_info(l)
 
     if not args.dry_run:
         save_timestamp(ct)
