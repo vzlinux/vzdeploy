@@ -13,7 +13,7 @@
 #			as well as release related packages. Installs Virtuozzo Linux
 #			release related packages and new kernel (unless SKIP_KERNEL is set)
 
-version="2.0.2"
+version="2.0.3"
 
 init_vars()
 {
@@ -465,6 +465,7 @@ if [ "$conversion" = "true" ] ; then
     fi
 
     if [ -e /sys/firmware/efi ]; then
+        yum -y --disablerepo=* --enablerepo=virtuozzolinux-base --enablerepo=virtuozzolinux-updates distro-sync -y shim-x64 2>&1 | tee -a $log
         # Bootloader for the previous system is probably dead by now.
         # Generate new grub config and create the new EFI boot entry.
         # It would be nice to remove the previous EFI entry as well, but we don't know which one it is...
@@ -472,7 +473,7 @@ if [ "$conversion" = "true" ] ; then
         efidir_part="$(grub2-probe --target=device --device-map= /boot/efi)"
         efidir_part_num="$(echo "$efidir_part" | sed 's/^[^0-9]*//')"
         efidir_disk="$(echo "$efidir_part" | sed 's/[0-9]\+$//')"
-        efibootmgr -c -L VirtuozzoLinux -d "$efidir_disk" -p "$efidir_part_num" -l /EFI/virtuozzo/shim.efi
+        efibootmgr -c -L VirtuozzoLinux -d "$efidir_disk" -p "$efidir_part_num" -l /EFI/virtuozzo/shimx64.efi 2>&1 | tee -a $log
     fi
 
     # Packages present in VzLinux installation from ISO
