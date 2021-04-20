@@ -318,6 +318,8 @@ def process_single_ct(ct):
     if need_stop:
         try_stop_ct(ct)
 
+    log_info(ct + ": Conversion successful")
+
 
 '''
 Save conversion timestamp inside container.
