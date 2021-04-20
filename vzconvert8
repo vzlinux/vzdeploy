@@ -43,7 +43,7 @@ def log_info(msg):
 
     lock.acquire()
     for l in str(msg).split('\n'):
-        if 'warning: rpmdb:' in l or 'ERROR: ld.so:' in l:
+        if 'Warning! rpmdb:' in l or 'ERROR: ld.so:' in l:
             continue
         if logfile:
             logfile.write(l + "\n")
@@ -59,17 +59,17 @@ def parse_command_line():
     subs = parser.add_subparsers(dest='list or convert')
     subs.required = True
 
-    list_parser = subs.add_parser('list', help='List CentOS 8 containers that can be subjected for convesion')
+    list_parser = subs.add_parser('list', help='List convertable CentOS 8 containers')
     list_parser.set_defaults(func=get_upgradable)
 
-    upgrade_parser = subs.add_parser('convert', help='Convert given containers for VzLinux 8')
-    upgrade_parser.add_argument('CT', metavar='CT', nargs='+', help='UUID or CTID or name of container to be converted')
-    upgrade_parser.add_argument('--dry-run', action='store_true', help='Do not perform real conversion, just check if it is possible')
+    upgrade_parser = subs.add_parser('convert', help='Convert the specified containers to VzLinux 8')
+    upgrade_parser.add_argument('CT', metavar='CT', nargs='+', help='UUID, CTID, or name of the container to convert')
+    upgrade_parser.add_argument('--dry-run', action='store_true', help='Check that conversion is possible, do not actually perform it')
     upgrade_parser.add_argument('-q', '--quiet', action='store_true', help='Be quiet')
     upgrade_parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose')
     upgrade_parser.add_argument('--log', help='Dump all messages to the specified log file')
-    upgrade_parser.add_argument('--parallel', metavar='parallel', type=int, choices=range(1, 101), nargs='?', help='Number of simultaneous concurrent conversions')
-    upgrade_parser.add_argument('--strict', action='store_true', help='Strict mode: some precheck warnings will be treated as conversion blockers')
+    upgrade_parser.add_argument('--parallel', metavar='parallel', type=int, choices=range(1, 101), nargs='?', help='The number of concurrent conversions to perform')
+    upgrade_parser.add_argument('--strict', action='store_true', help='Treat some of the precheck warnings as errors that block conversion')
     upgrade_parser.set_defaults(func=process_cts)
 
     args = parser.parse_args()
@@ -87,13 +87,13 @@ def check_config(ctid):
                     vz_private = l.strip().split("=")[1].replace('/$VEID', '').replace('"', '').replace("'", '')
                     break
     except Exception as e:
-        log_info("Can't check CT config: " + str(e))
+        log_info("Unable to check container config: " + str(e))
         return False
 
     try:
         f = open(vz_private + "/" + ctid + "/ve.conf", "r")
     except Exception as e:
-        log_info("Can't check CT config: " + str(e))
+        log_info("Unable to check container config: " + str(e))
         return False
 
     for l in f.readlines():
@@ -117,11 +117,11 @@ def check_space(ctid):
             continue
         free_space = int(l)
         if free_space < SPACE_LIMIT:
-            log_info("Not enough free space inside container, must have at least 1Gb")
+            log_info("Not enough free space in the container, at least 1 GB is required")
             return False
         else:
             return True
-    log_info("Can't check free space inside container!")
+    log_info("Unable to check free space in the container!")
     return False
 
 '''
@@ -132,7 +132,7 @@ def check_repos(ctid):
     try:
         dnf_out = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, 'dnf', 'repolist', 'enabled'])
     except Exception as e:
-        log_info("Can't check repositories inside container! " + str(e))
+        log_info("Unable to check the repositories in the container! " + str(e))
         return False
 
     for l in dnf_out.decode('utf-8').split("\n"):
@@ -140,7 +140,7 @@ def check_repos(ctid):
             continue
         repo_id = l.split(" ")[0]
         if repo_id and repo_id not in SUPPORTED_REPOS:
-            log_info("The following repository is enabled inside the CT but not supported by conversion tools: " + str(repo_id))
+            log_info("The following unsupported repository is enabled in the container: " + str(repo_id))
             return False
 
     return True
@@ -164,7 +164,7 @@ def try_stop_ct(ctid):
         res = subprocess.check_output(['/sbin/vzctl', 'stop', ctid]).decode('utf-8')
         log_info(res)
     except Exception as e:
-        log_info("Failed to stop CT: " + str(e))
+        log_info("Failed to stop the container: " + str(e))
 
 '''
 Perform conversion of containers specified in cmdline
@@ -209,13 +209,13 @@ def process_single_ct(ct):
             break
 
     if not check_config(ct):
-        log_info(ct + ": " + "!!! Conversion forbidden !!! OSTEMPLATE of the container is not supported")
+        log_info(ct + ": " + "Conversion aborted: Container's OS template is not supported")
         return
 
     need_stop = False
     ct_state = subprocess.check_output(['/sbin/vzctl', 'status', ct]).decode('utf-8')
     if not "running" in ct_state:
-        log_info(ct + ": " + "Container is stopeed, starting...")
+        log_info(ct + ": " + "Container is stopped. Converting...")
         try:
             res = subprocess.check_output(['/sbin/vzctl', 'start', ct, '--wait']).decode('utf-8')
             log_info(res)
@@ -228,7 +228,7 @@ def process_single_ct(ct):
     proceed = True
     for b in BLOCKER_PKGS:
         if b in old_pkg_list_raw:
-            log_info(ct + ": " + "!!! Conversion forbidden !!! We have detected a software which doesn't support VzLinux8 yet: " + BLOCKER_PKGS[b])
+            log_info(ct + ": " + "Conversion aborted: Software unsupported by VzLinux 8 detected: " + BLOCKER_PKGS[b])
             proceed = False
     if not proceed:
         if need_stop:
@@ -237,18 +237,18 @@ def process_single_ct(ct):
 
     if not check_space(ct):
         if not args.strict:
-            log_info(ct + ": " + "!!! WARNING !!! Failed to ensure that we have enough free space inside CT")
+            log_info(ct + ": " + "Warning! May not be enough free space in the container")
         else:
-            log_info(ct + ": " + "!!! Conversion forbidden !!! Failed to ensure that we have enough free space inside CT")
+            log_info(ct + ": " + "Conversion aborted: May not be enough free space in the container")
             if need_stop:
                 try_stop_ct(ctid)
             return
 
     if not check_repos(ct):
         if not args.strict:
-            log_info(ct + ": " + "!!! WARNING !!! CT seems to contain repositories not supported by conversion tools")
+            log_info(ct + ": " + "Warning! Unsupported repositories detected")
         else:
-            log_info(ct + ": " + "!!! Conversion forbidden !!! CT seems to contain repositories not supported by conversion tools")
+            log_info(ct + ": " + "Conversion aborted: Unsupported repositories detected")
             if need_stop:
                 try_stop_ct(ctid)
             return
@@ -273,13 +273,13 @@ def process_single_ct(ct):
     vzdeploy_args.append('-c')
     vzdeploy_args.append(ct)
 
-    log_info("Starting converting: " + ct)
+    log_info("Starting conversion: " + ct)
     pr = subprocess.Popen(['/bin/vzdeploy8_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
     while True:
         l = pr.stdout.readline()
         if l == '' and pr.poll() != None:
             break
-        if 'warning: rpmdb:' in l or 'ERROR: ld.so:' in l:
+        if 'Warning! rpmdb:' in l or 'ERROR: ld.so:' in l:
             continue
         if l:
             log_info(l.strip())
@@ -297,22 +297,22 @@ def process_single_ct(ct):
         added_ports = [p for p in new_ports_list if p not in old_ports_list]
         removed_ports = [p for p in old_ports_list if p not in new_ports_list]
         if added_pkgs:
-            msg = ct + ": " + "!!! WARNING: !!!\nThe following packages have been added with respect to CentOS 8:" + str(added_pkgs)
+            msg = ct + ": " + "Warning!\nThe following packages were added compared to CentOS 8:" + str(added_pkgs)
             log_info(msg)
         if removed_pkgs:
-            msg = ct + ": " + "!!! WARNING: !!!\nThe following packages have been removed with respect to CentOS 8:" + str(removed_pkgs)
+            msg = ct + ": " + "Warning!\nThe following packages were removed compared to CentOS 8:" + str(removed_pkgs)
             log_info(msg)
         if added_ps:
-            msg = ct + ": " + "!!! WARNING: !!!\nThe following processes became active with respect to CentOS 8:" + str(added_ps)
+            msg = ct + ": " + "Warning!\nThe following processes became active compared to CentOS 8:" + str(added_ps)
             log_info(msg)
         if removed_ps:
-            msg = ct + ": " + "!!! WARNING: !!!\nThe following processes became inactive with respect to CentOS 8:" + str(removed_ps)
+            msg = ct + ": " + "Warning!\nThe following processes became inactive compared to CentOS 8:" + str(removed_ps)
             log_info(msg)
         if added_ports:
-            msg = ct + ": " + "!!! WARNING: !!!\nThe following ports became open with respect to CentOS 8:" + str(added_ports)
+            msg = ct + ": " + "Warning!\nThe following ports were open compared to CentOS 8:" + str(added_ports)
             log_info(msg)
         if removed_ports:
-            msg = ct + ": " + "!!! WARNING: !!!\nThe following ports became closed with respect to CentOS 8:" + str(removed_ports)
+            msg = ct + ": " + "Warning!\nThe following ports were closed compared to CentOS 8:" + str(removed_ports)
             log_info(msg)
 
     if need_stop:
