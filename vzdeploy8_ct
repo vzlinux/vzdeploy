@@ -83,7 +83,7 @@ change_distro() {
 CT_PRIV=`cat /etc/vz/vz.conf | grep '^VE_PRIVATE=' | sed 's/VE_PRIVATE=//' | sed 's/"//g' | sed "s/'//g" | sed 's/$VEID//g' `
 CT_VE="${CT_PRIV}${ct_id}/ve.conf"
 if [ -f "${CT_VE}" ]; then
-    sed -i 's!centos-8-x86_64!vzlinux-8-x86_64!g' "${CT_VE}"
+    sed -i 's!centos-8!vzlinux-8!g' "${CT_VE}"
 else 
     echo "${CT_VE} config does not exist. Exiting"
     exit;
@@ -104,7 +104,7 @@ if [ ${dryrun} -eq "1" ]; then
 		echo "Upgrade is possible"
 	fi
         CT_PRIV=`cat /etc/vz/vz.conf | grep '^VE_PRIVATE=' | sed 's/VE_PRIVATE=//' | sed 's/"//g' | sed "s/'//g" | sed 's/$VEID//g' `
-	sed -i 's!vzlinux-8-x86_64!centos-8-x86_64!g' "${CT_PRIV}${ct_id}/ve.conf"
+	sed -i 's!vzlinux-8!centos-8!g' "${CT_PRIV}${ct_id}/ve.conf"
 	exit;
 fi
 if [ ${nonetwork} -eq "1" ]; then
