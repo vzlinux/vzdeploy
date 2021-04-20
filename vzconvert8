@@ -197,7 +197,12 @@ def process_cts():
 A thread function processing single CT
 '''
 def process_single_ct(ct):
-    ctid = subprocess.check_output(['/sbin/vzlist', '-o', 'ctid', ct]).decode('utf-8')
+    try:
+        ctid = subprocess.check_output(['/sbin/vzlist', '-o', 'ctid', ct]).decode('utf-8')
+    except Exception as e:
+        log_info("Failed to get info for container %s" % ct)
+        return
+
     for l in ctid.split("\n"):
         if 'CTID' not in l:
             ct = str(l).strip()
@@ -277,7 +282,7 @@ def process_single_ct(ct):
         if 'warning: rpmdb:' in l or 'ERROR: ld.so:' in l:
             continue
         if l:
-            log_info(l)
+            log_info(l.strip())
 
     if not args.dry_run:
         save_timestamp(ct)
