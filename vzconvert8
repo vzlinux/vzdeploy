@@ -43,7 +43,7 @@ def log_info(msg):
 
     lock.acquire()
     for l in str(msg).split('\n'):
-        if 'Warning! rpmdb:' in l or 'ERROR: ld.so:' in l:
+        if 'warning! rpmdb:' in l or 'ERROR: ld.so:' in l:
             continue
         if logfile:
             logfile.write(l + "\n")
@@ -215,7 +215,7 @@ def process_single_ct(ct):
     need_stop = False
     ct_state = subprocess.check_output(['/sbin/vzctl', 'status', ct]).decode('utf-8')
     if not "running" in ct_state:
-        log_info(ct + ": " + "Container is stopped. Converting...")
+        log_info(ct + ": " + "Container is stopped. Starting container...")
         try:
             res = subprocess.check_output(['/sbin/vzctl', 'start', ct, '--wait']).decode('utf-8')
             log_info(res)
