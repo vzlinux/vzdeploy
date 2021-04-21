@@ -1,7 +1,14 @@
 #!/usr/bin/python3
 
+#
+# Copyright (c) 2020-2021 Virtuozzo International GmbH. All rights reserved.
+#
+# Our contact details: Virtuozzo International GmbH, Vordergasse 59, 8200
+# Schaffhausen, Switzerland.
+
 import argparse
 import subprocess
+import datetime
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import threading
@@ -37,19 +44,23 @@ SUPPORTED_REPOS = ['appstream', 'baseos', 'extras', 'powertools', 'epel', 'epel-
 '''
 Simple log wrapper to print messages to eithe STDOUT or to logfile
 '''
-def log_info(msg):
+def log_info(msg, ct_log=None):
     global logfile
     global lock
 
-    lock.acquire()
+    if not ct_log:
+        lock.acquire()
     for l in str(msg).split('\n'):
         if 'warning! rpmdb:' in l or 'ERROR: ld.so:' in l:
             continue
-        if logfile:
+        if ct_log:
+            ct_log.write(l + "\n")
+        elif logfile:
             logfile.write(l + "\n")
         print(l)
         sys.stdout.flush()
-    lock.release()
+    if not ct_log:
+        lock.release()
 
 
 def parse_command_line():
@@ -67,7 +78,7 @@ def parse_command_line():
     upgrade_parser.add_argument('--dry-run', action='store_true', help='Check that conversion is possible, do not actually perform it')
     upgrade_parser.add_argument('-q', '--quiet', action='store_true', help='Be quiet')
     upgrade_parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose')
-    upgrade_parser.add_argument('--log', help='Dump all messages to the specified log file')
+    upgrade_parser.add_argument('--log', help='Dump all messages to the specified log file. Detailed messages for every container will be dumped to separate files with the same prefix')
     upgrade_parser.add_argument('--parallel', metavar='parallel', type=int, choices=range(1, 101), nargs='?', help='The number of concurrent conversions to perform')
     upgrade_parser.add_argument('--strict', action='store_true', help='Treat some of the precheck warnings as errors that block conversion')
     upgrade_parser.set_defaults(func=process_cts)
@@ -87,13 +98,13 @@ def check_config(ctid):
                     vz_private = l.strip().split("=")[1].replace('/$VEID', '').replace('"', '').replace("'", '')
                     break
     except Exception as e:
-        log_info("Unable to check container config: " + str(e))
+        log_info(ctid + ": Unable to check container config: " + str(e))
         return False
 
     try:
         f = open(vz_private + "/" + ctid + "/ve.conf", "r")
     except Exception as e:
-        log_info("Unable to check container config: " + str(e))
+        log_info(ctid + ": Unable to check container config: " + str(e))
         return False
 
     for l in f.readlines():
@@ -117,11 +128,11 @@ def check_space(ctid):
             continue
         free_space = int(l)
         if free_space < SPACE_LIMIT:
-            log_info("Not enough free space in the container, at least 1 GB is required")
+            log_info(ctid + ": Not enough free space in the container, at least 1 GB is required")
             return False
         else:
             return True
-    log_info("Unable to check free space in the container!")
+    log_info(ctid + ": Unable to check free space in the container!")
     return False
 
 '''
@@ -132,7 +143,7 @@ def check_repos(ctid):
     try:
         dnf_out = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, 'dnf', 'repolist', 'enabled'])
     except Exception as e:
-        log_info("Unable to check the repositories in the container! " + str(e))
+        log_info(ctid + ": Unable to check the repositories in the container! " + str(e))
         return False
 
     for l in dnf_out.decode('utf-8').split("\n"):
@@ -140,7 +151,7 @@ def check_repos(ctid):
             continue
         repo_id = l.split(" ")[0]
         if repo_id and repo_id not in SUPPORTED_REPOS:
-            log_info("The following unsupported repository is enabled in the container: " + str(repo_id))
+            log_info(ctid + ": The following unsupported repository is enabled in the container: " + str(repo_id))
             return False
 
     return True
@@ -164,7 +175,7 @@ def try_stop_ct(ctid):
         res = subprocess.check_output(['/sbin/vzctl', 'stop', ctid]).decode('utf-8')
         log_info(res)
     except Exception as e:
-        log_info("Failed to stop the container: " + str(e))
+        log_info(ctid + ": Failed to stop the container: " + str(e))
 
 '''
 Perform conversion of containers specified in cmdline
@@ -197,6 +208,8 @@ def process_cts():
 A thread function processing single CT
 '''
 def process_single_ct(ct):
+    global args
+
     try:
         ctid = subprocess.check_output(['/sbin/vzlist', '-o', 'ctid', ct]).decode('utf-8')
     except Exception as e:
@@ -209,18 +222,18 @@ def process_single_ct(ct):
             break
 
     if not check_config(ct):
-        log_info(ct + ": " + "Conversion aborted: Container's OS template is not supported")
+        log_info(ct + ": Conversion aborted: Container's OS template is not supported")
         return
 
     need_stop = False
     ct_state = subprocess.check_output(['/sbin/vzctl', 'status', ct]).decode('utf-8')
     if not "running" in ct_state:
-        log_info(ct + ": " + "Container is stopped. Starting container...")
+        log_info(ct + ": Container is stopped. Starting container...")
         try:
             res = subprocess.check_output(['/sbin/vzctl', 'start', ct, '--wait']).decode('utf-8')
             log_info(res)
         except Exception as e:
-            log_info(ct + ": " + "Failed to start: " + str(e))
+            log_info(ct + ": Failed to start: " + str(e))
             return
         need_stop = True
 
@@ -237,18 +250,18 @@ def process_single_ct(ct):
 
     if not check_space(ct):
         if not args.strict:
-            log_info(ct + ": " + "Warning! May not be enough free space in the container")
+            log_info(ct + ": Warning! May not be enough free space in the container")
         else:
-            log_info(ct + ": " + "Conversion aborted: May not be enough free space in the container")
+            log_info(ct + ": Conversion aborted: May not be enough free space in the container")
             if need_stop:
                 try_stop_ct(ctid)
             return
 
     if not check_repos(ct):
         if not args.strict:
-            log_info(ct + ": " + "Warning! Unsupported repositories detected")
+            log_info(ct + ": Warning! Unsupported repositories detected")
         else:
-            log_info(ct + ": " + "Conversion aborted: Unsupported repositories detected")
+            log_info(ct + ": Conversion aborted: Unsupported repositories detected")
             if need_stop:
                 try_stop_ct(ctid)
             return
@@ -273,8 +286,10 @@ def process_single_ct(ct):
     vzdeploy_args.append('-c')
     vzdeploy_args.append(ct)
 
-    log_info("Starting conversion: " + ct)
+    log_info("Starting conversion: " + ct + " at " + str(datetime.datetime.now().time()))
     pr = subprocess.Popen(['/bin/vzdeploy8_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+    if args.log:
+        ct_log = open(args.log + "." + ct, "w")
     while True:
         l = pr.stdout.readline()
         if l == '' and pr.poll() != None:
@@ -282,7 +297,9 @@ def process_single_ct(ct):
         if 'Warning! rpmdb:' in l or 'ERROR: ld.so:' in l:
             continue
         if l:
-            log_info(l.strip())
+            log_info(l.strip(), ct_log)
+    if args.log:
+        ct_log.close()
 
     if not args.dry_run:
         save_timestamp(ct)
@@ -297,28 +314,28 @@ def process_single_ct(ct):
         added_ports = [p for p in new_ports_list if p not in old_ports_list]
         removed_ports = [p for p in old_ports_list if p not in new_ports_list]
         if added_pkgs:
-            msg = ct + ": " + "Warning!\nThe following packages were added compared to CentOS 8:" + str(added_pkgs)
+            msg = ct + ": Warning!\nThe following packages were added compared to CentOS 8:" + str(added_pkgs)
             log_info(msg)
         if removed_pkgs:
-            msg = ct + ": " + "Warning!\nThe following packages were removed compared to CentOS 8:" + str(removed_pkgs)
+            msg = ct + ": Warning!\nThe following packages were removed compared to CentOS 8:" + str(removed_pkgs)
             log_info(msg)
         if added_ps:
-            msg = ct + ": " + "Warning!\nThe following processes became active compared to CentOS 8:" + str(added_ps)
+            msg = ct + ": Warning!\nThe following processes became active compared to CentOS 8:" + str(added_ps)
             log_info(msg)
         if removed_ps:
-            msg = ct + ": " + "Warning!\nThe following processes became inactive compared to CentOS 8:" + str(removed_ps)
+            msg = ct + ": Warning!\nThe following processes became inactive compared to CentOS 8:" + str(removed_ps)
             log_info(msg)
         if added_ports:
-            msg = ct + ": " + "Warning!\nThe following ports were open compared to CentOS 8:" + str(added_ports)
+            msg = ct + ": Warning!\nThe following ports were open compared to CentOS 8:" + str(added_ports)
             log_info(msg)
         if removed_ports:
-            msg = ct + ": " + "Warning!\nThe following ports were closed compared to CentOS 8:" + str(removed_ports)
+            msg = ct + ": Warning!\nThe following ports were closed compared to CentOS 8:" + str(removed_ports)
             log_info(msg)
 
     if need_stop:
         try_stop_ct(ct)
 
-    log_info(ct + ": Conversion successful")
+    log_info(ct + ": Conversion successful at " + str(datetime.datetime.now().time()))
 
 
 '''
