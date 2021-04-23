@@ -290,6 +290,8 @@ def process_single_ct(ct):
     pr = subprocess.Popen(['/bin/vzdeploy8_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
     if args.log:
         ct_log = open(args.log + "." + ct, "w")
+    else:
+        ct_log = None
     while True:
         l = pr.stdout.readline()
         if l == '' and pr.poll() != None:
