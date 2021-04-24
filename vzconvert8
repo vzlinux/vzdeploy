@@ -13,6 +13,7 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import threading
 import sys
+import resource
 
 # It is ok for these packages to be added due to differences between vzlinux8 and centos8 templates
 # and default vzlinux requirements
@@ -185,6 +186,8 @@ def process_cts():
     global logfile
     global lock
 
+    # Increase 'ulimit -n' for ancestors
+    resource.setrlimit(resource.RLIMIT_NOFILE, (131072, 131072))
     lock = threading.Lock()
     logfile = None
     if args.log:
