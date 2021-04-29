@@ -34,7 +34,7 @@ DROPPED_PKGS_IGNORE = ['centos-linux-release.noarch', 'centos-linux-repos.noarch
 # 'systemct' (there is no typo here) looks like a ghost in vzps output
 CHANGED_PS_IGNORE = ['mandb', 'sh', 'systemct']
 
-# Forbid update if found installed package containing one of the followinf strings in name
+# Forbid update if found installed package containing one of the following strings in name
 BLOCKER_PKGS = {'plesk': 'Plesk', 'cpanel': 'cPanel'}
 
 # Minimum free space we want to see inside the container
