@@ -15,7 +15,7 @@ import threading
 import sys
 import resource
 
-# It is ok for these packages to be added due to differences between vzlinux8 and centos8 templates
+# It is ok for these packages to be added due to differences between vzlinux8 and centos8/almalinux8 templates
 # and default vzlinux requirements
 ADDED_PKGS_IGNORE = ['annobin.x86_64', 'cpp.x86_64', 'dnf-plugins-core.noarch', 'fstrm.x86_64', 'gcc.x86_64',
                  'glibc-devel.x86_64', 'glibc-headers.x86_64', 'hwdata.noarch', 'isl.x86_64', 'kernel-headers.x86_64',
@@ -26,7 +26,9 @@ ADDED_PKGS_IGNORE = ['annobin.x86_64', 'cpp.x86_64', 'dnf-plugins-core.noarch', 
                  'vzlinux-logos.noarch', 'vzlinux-logos-httpd.noarch']
 
 # The following packages are ok to drop - they are replaced by vzlinux ones
-DROPPED_PKGS_IGNORE = ['centos-linux-release.noarch', 'centos-linux-repos.noarch', 'centos-logos-httpd.noarch', 'centos-logos.noarch', 'centos-gpg-keys.noarch']
+DROPPED_PKGS_IGNORE = ['centos-linux-release.noarch', 'centos-linux-repos.noarch', 'centos-logos-httpd.noarch',
+			'centos-logos.noarch', 'centos-gpg-keys.noarch', 'almalinux-release.noarch', 'almalinux-repos.noarch',
+			'almalinux-logos-httpd.noarch', 'almalinux-logos.noarch', 'almalinux-gpg-keys.noarch',]
 
 # There is no harm if some processes became active/inacitve after upgrade.
 # mandb & logrotate can be launched by cron;
@@ -71,7 +73,7 @@ def parse_command_line():
     subs = parser.add_subparsers(dest='list or convert')
     subs.required = True
 
-    list_parser = subs.add_parser('list', help='List convertable CentOS 8 containers')
+    list_parser = subs.add_parser('list', help='List convertable CentOS 8 / AlmaLinux 8 containers')
     list_parser.set_defaults(func=get_upgradable)
 
     upgrade_parser = subs.add_parser('convert', help='Convert the specified containers to VzLinux 8')
@@ -88,7 +90,7 @@ def parse_command_line():
 
 
 '''
-Check CT config - if OSTEMPLATE is set to centos-8
+Check CT config - if OSTEMPLATE is set to centos-8 or almalinux-8
 '''
 def check_config(ctid):
     vz_private = None
@@ -110,7 +112,9 @@ def check_config(ctid):
 
     for l in f.readlines():
         if 'OSTEMPLATE=".centos-8-x86_64"' in l or 'OSTEMPLATE="centos-8-x86_64"' in l \
-                or 'OSTEMPLATE=".centos-8"' in l or 'OSTEMPLATE="centos-8"' in l:
+                or 'OSTEMPLATE=".centos-8"' in l or 'OSTEMPLATE="centos-8"' in l \
+                or 'OSTEMPLATE=".almalinux-8-x86_64"' in l or 'OSTEMPLATE="almalinux-8-x86_64"' in l \
+                or 'OSTEMPLATE=".almalinux-8"' in l or 'OSTEMPLATE="almalinux-8"' in l:
             f.close()
             return True
 
@@ -319,22 +323,22 @@ def process_single_ct(ct):
         added_ports = [p for p in new_ports_list if p not in old_ports_list]
         removed_ports = [p for p in old_ports_list if p not in new_ports_list]
         if added_pkgs:
-            msg = ct + ": Warning!\nThe following packages were added compared to CentOS 8:" + str(added_pkgs)
+            msg = ct + ": Warning!\nThe following packages were added compared to the old container state:" + str(added_pkgs)
             log_info(msg)
         if removed_pkgs:
-            msg = ct + ": Warning!\nThe following packages were removed compared to CentOS 8:" + str(removed_pkgs)
+            msg = ct + ": Warning!\nThe following packages were removed compared to the old container state:" + str(removed_pkgs)
             log_info(msg)
         if added_ps:
-            msg = ct + ": Warning!\nThe following processes became active compared to CentOS 8:" + str(added_ps)
+            msg = ct + ": Warning!\nThe following processes became active compared to the old container state:" + str(added_ps)
             log_info(msg)
         if removed_ps:
-            msg = ct + ": Warning!\nThe following processes became inactive compared to CentOS 8:" + str(removed_ps)
+            msg = ct + ": Warning!\nThe following processes became inactive compared to the old container state:" + str(removed_ps)
             log_info(msg)
         if added_ports:
-            msg = ct + ": Warning!\nThe following ports were open compared to CentOS 8:" + str(added_ports)
+            msg = ct + ": Warning!\nThe following ports were open compared to the old container state:" + str(added_ports)
             log_info(msg)
         if removed_ports:
-            msg = ct + ": Warning!\nThe following ports were closed compared to CentOS 8:" + str(removed_ports)
+            msg = ct + ": Warning!\nThe following ports were closed compared to the old container state:" + str(removed_ports)
             log_info(msg)
 
     if need_stop:
@@ -358,7 +362,8 @@ def get_upgradable():
             ostemplate = parts[0]
         except:
             continue
-        if ostemplate.endswith('centos-8-x86_64') or ostemplate.endswith('centos-8'):
+        if ostemplate.endswith('centos-8-x86_64') or ostemplate.endswith('centos-8') \
+    		or ostemplate.endswith('almalinux-8-x86_64') or ostemplate.endswith('almalinux-8'):
             print("%s (%s)" % (parts[2], parts[1]))
 
 if __name__ == '__main__':
