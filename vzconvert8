@@ -249,6 +249,7 @@ def process_single_ct(ct):
     for b in BLOCKER_PKGS:
         if b in old_pkg_list_raw:
             log_info(ct + ": " + "Conversion aborted: Software unsupported by VzLinux 8 detected: " + BLOCKER_PKGS[b])
+            log_info("Please contact the software vendor and request VzLinux 8 support")
             proceed = False
     if not proceed:
         if need_stop:
