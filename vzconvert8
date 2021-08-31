@@ -429,7 +429,7 @@ def process_single_ct(ct):
         ct_log.close()
 
     if not args.dry_run:
-        save_timestamp(ct)
+        save_timestamp(ct, distro_kind)
         new_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
         new_pkg_list = subprocess.check_output(['/sbin/vzpkg', 'list', '-p', ct]).decode('utf-8').split("\n")
         new_pkg_list = [p.split(" ")[0] for p in new_pkg_list]
@@ -469,8 +469,11 @@ def process_single_ct(ct):
 Save conversion timestamp inside container.
 Useful for CEP to know that the container was converted
 '''
-def save_timestamp(ctid):
-    subprocess.call(['/sbin/vzctl', 'exec', ctid, '/bin/touch', '/var/log/vzconvert8.stamp'])
+def save_timestamp(ctid, distro_kind=1):
+    if distro_kind == 1:
+        subprocess.call(['/sbin/vzctl', 'exec', ctid, '/bin/touch', '/var/log/vzconvert8.stamp'])
+    else:
+        subprocess.call(['/sbin/vzctl', 'exec', ctid, '/bin/touch', '/var/log/vzconvert7.stamp'])
 
 def get_upgradable():
     all_ct = subprocess.check_output(['/sbin/vzlist', '-a', '-o', 'ostemplate,ctid,name'])
