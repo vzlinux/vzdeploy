@@ -24,7 +24,7 @@ ADDED_PKGS_IGNORE = ['annobin.x86_64', 'cpp.x86_64', 'dnf-plugins-core.noarch', 
                  'pkgconf-pkg-config.x86_64', 'pkgconf.x86_64', 'protobuf-c.x86_64', 'python3-dateutil.noarch',
                  'python3-dnf-plugins-core.noarch', 'rdma-core.x86_64', 'vzlinux-release.x86_64', 'zstd.x86_64',
                  'vzlinux-logos.noarch', 'vzlinux-logos-httpd.noarch',
-                 # The following ones are added when converting from C7
+                  # The following ones are added when converting from C7
                  'libssh.x86_64', 'compat-openssl10.x86_64', 'lua-libs.x86_64', 'iptables-libs.x86_64', 'systemd-container.x86_64', 'boost-system.x86_64', 'nettle.x86_64',
                  'libreport-filesystem.x86_64', 'boost-date-time.x86_64', 'libsecret.x86_64', 'perl-Term-ANSIColor.noarch', 'perl-IO.x86_64', 'mariadb-connector-c-config.noarch',
                  'vzlinux-cep-config.x86_64', 'python3-libdnf.x86_64', 'libkcapi-hmaccalc.x86_64', 'centos-logos-httpd.noarch', 'dmidecode.x86_64', 'python3-rpm.x86_64',
@@ -55,6 +55,7 @@ ADDED_PKGS_IGNORE = ['annobin.x86_64', 'cpp.x86_64', 'dnf-plugins-core.noarch', 
 DROPPED_PKGS_IGNORE = ['centos-linux-release.noarch', 'centos-linux-repos.noarch', 'centos-logos-httpd.noarch',
 			'centos-logos.noarch', 'centos-gpg-keys.noarch', 'almalinux-release.noarch', 'almalinux-repos.noarch',
 			'almalinux-logos-httpd.noarch', 'almalinux-logos.noarch', 'almalinux-gpg-keys.noarch',
+			'almalinux-release.x86_64',
 			# The following ones are dropped when updating from C7 (some of them just changed their arch, the others are obsolete)
 			'centos-release.x86_64', 'vzdummy-systemd-el7.noarch', 'systemd-sysv.x86_64', 'yum-plugin-fastestmirror.noarch',
 			'man-pages.noarch', 'sysvinit-tools.x86_64', 'ebtables.x86_64', 'authconfig.x86_64', 'vim-filesystem.x86_64',
@@ -70,7 +71,7 @@ POST_UPGRADE_ADD_PKGS = ['binutils', 'perl', 'python2']
 # mandb & logrotate can be launched by cron;
 # 'sh' also comes from rpm_clean cron task.
 # 'systemct' (there is no typo here) looks like a ghost in vzps output
-CHANGED_PS_IGNORE = ['mandb', 'sh', 'systemct']
+CHANGED_PS_IGNORE = ['mandb', 'sh', 'systemct', 'disp_helper']
 
 # Forbid update if found installed package containing one of the following strings in name
 BLOCKER_PKGS = {'plesk': 'Plesk', 'cpanel': 'cPanel'}

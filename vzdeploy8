@@ -265,6 +265,7 @@ backup()
 	done
 
 	for p in centos-release centos-release-notes centos-logos rhnlib \
+		almalinux-release almalinux-release-notes almalinux-logos \
 		redhat-release redhat-release-notes redhat-logos sl-release sl-release-notes
 	do
 		if rpm -q $p > /dev/null; then
