@@ -23,12 +23,48 @@ ADDED_PKGS_IGNORE = ['annobin.x86_64', 'cpp.x86_64', 'dnf-plugins-core.noarch', 
                  'libxcrypt-devel.x86_64', 'lmdb-libs.x86_64', 'pciutils-libs.x86_64', 'pciutils.x86_64', 'pkgconf-m4.noarch',
                  'pkgconf-pkg-config.x86_64', 'pkgconf.x86_64', 'protobuf-c.x86_64', 'python3-dateutil.noarch',
                  'python3-dnf-plugins-core.noarch', 'rdma-core.x86_64', 'vzlinux-release.x86_64', 'zstd.x86_64',
-                 'vzlinux-logos.noarch', 'vzlinux-logos-httpd.noarch']
+                 'vzlinux-logos.noarch', 'vzlinux-logos-httpd.noarch',
+                 # The following ones are added when converting from C7
+                 'libssh.x86_64', 'compat-openssl10.x86_64', 'lua-libs.x86_64', 'iptables-libs.x86_64', 'systemd-container.x86_64', 'boost-system.x86_64', 'nettle.x86_64',
+                 'libreport-filesystem.x86_64', 'boost-date-time.x86_64', 'libsecret.x86_64', 'perl-Term-ANSIColor.noarch', 'perl-IO.x86_64', 'mariadb-connector-c-config.noarch',
+                 'vzlinux-cep-config.x86_64', 'python3-libdnf.x86_64', 'libkcapi-hmaccalc.x86_64', 'centos-logos-httpd.noarch', 'dmidecode.x86_64', 'python3-rpm.x86_64',
+                 'python3-libcomps.x86_64', 'iproute-tc.x86_64', 'boost-regex.x86_64', 'vzdummy-systemd-el8.noarch', 'smartmontools.x86_64', 'gdbm-libs.x86_64', 'python3-nftables.x86_64',
+                 'perl-Text-Tabs+Wrap.noarch', 'python3-six.noarch', 'perl-interpreter.x86_64', 'python3-xmltodict.noarch', 'systemd-udev.x86_64', 'cyrus-sasl-gssapi.x86_64',
+                 'python3-dbus.x86_64', 'httpd-filesystem.noarch', 'python3-pyudev.noarch', 'python3-slip-dbus.noarch', 'libusbx.x86_64', 'authselect-compat.x86_64', 'readonly-root.noarch',
+                 'pcre2.x86_64', 'bind-export-libs.x86_64', 'coreutils-common.x86_64', 'python3-pip-wheel.noarch',
+                 'numactl-libs.x86_64', 'python36.x86_64', 'ipcalc.x86_64', 'crypto-policies.noarch', 'yajl.x86_64', 'libxslt.x86_64', 'python3-dnf.noarch',
+                 'python3-gobject-base.x86_64', 'python3-psutil.x86_64', 'libsigsegv.x86_64', 'libcomps.x86_64', 'npth.x86_64', 'GeoIP-GeoLite-data.noarch',
+                 'elfutils-default-yama-scope.noarch', 'libxcrypt.x86_64', 'python3-pip.noarch', 'libzstd.x86_64', 'libidn2.x86_64', 'libicu.x86_64', 'boost-thread.x86_64', 'libnsl2.x86_64',
+                 'dbus-tools.x86_64', 'libfdisk.x86_64', 'ima-evm-utils.x86_64', 'platform-python.x86_64', 'libnftnl.x86_64', 'iptables-ebtables.x86_64',
+                 'crypto-policies-scripts.noarch', 'python3-decorator.noarch', 'mariadb-connector-c.x86_64', 'mariadb-common.x86_64', 'publicsuffix-list-dafsa.noarch',
+                 'libyaml.x86_64', 'authselect.x86_64', 'libmodulemd.x86_64', 'librepo.x86_64', 'libkcapi.x86_64', 'dnf.noarch', 'lsscsi.x86_64',
+                 'platform-python-pip.noarch', 'lshw.x86_64', 'python3-libselinux.x86_64', 'libmetalink.x86_64', 'brotli.x86_64', 'libksba.x86_64', 'fuse-libs.x86_64',
+                 'python3-setuptools-wheel.noarch', 'network-scripts.x86_64', 'glibc-all-langpacks.x86_64', 'netconsole-service.noarch', 'libseccomp.x86_64',
+                 'centos-gpg-keys.noarch', 'python3-gpg.x86_64', 'dbus-daemon.x86_64', 'libfastjson.x86_64', 'python3-libs.x86_64',
+                 'systemd-pam.x86_64', 'libmaxminddb.x86_64', 'nftables.x86_64', 'perl-Errno.x86_64', 'python3-configparser.noarch', 'dnf-data.noarch',
+                 'libssh-config.noarch', 'python3-hawkey.x86_64', 'python3-lxml.x86_64', 'python3-slip.noarch', 'disp-helper.x86_64', 'libpsl.x86_64', 'libsmartcols.x86_64',
+                 'gnutls.x86_64', 'mpfr.x86_64', 'libnsl.x86_64', 'man-pages.x86_64', 'lz4-libs.x86_64', 'boost-program-options.x86_64', 'perl-Term-Cap.noarch',
+                 'perl-MIME-Base64.x86_64', 'centos-obsolete-packages.noarch', 'dhcp-common.noarch', 'vim-filesystem.noarch', 'dbus-common.noarch', 'libdnf.x86_64',
+                 'mod_http2.x86_64', 'libvirt-libs.x86_64', 'dhcp-client.x86_64', 'python3-libvirt.x86_64', 'bc.x86_64', 'sqlite-libs.x86_64',
+                 'libunistring.x86_64', 'ncurses-compat-libs.x86_64', 'boost-filesystem.x86_64', 'python3-setuptools.noarch', 'tpm2-tss.x86_64', 'jansson.x86_64',
+                 'perl-Unicode-Normalize.x86_64', 'platform-python-setuptools.noarch', 'mariadb.x86_64', 'emacs-filesystem.noarch', 'authselect-libs.x86_64', 'libsolv.x86_64',
+                 'disp-helper-scripts-vz.x86_64', 'python3-firewall.noarch', 'libnghttp2.x86_64'
+                 ]
 
 # The following packages are ok to drop - they are replaced by vzlinux ones
 DROPPED_PKGS_IGNORE = ['centos-linux-release.noarch', 'centos-linux-repos.noarch', 'centos-logos-httpd.noarch',
 			'centos-logos.noarch', 'centos-gpg-keys.noarch', 'almalinux-release.noarch', 'almalinux-repos.noarch',
-			'almalinux-logos-httpd.noarch', 'almalinux-logos.noarch', 'almalinux-gpg-keys.noarch',]
+			'almalinux-logos-httpd.noarch', 'almalinux-logos.noarch', 'almalinux-gpg-keys.noarch',
+			# The following ones are dropped when updating from C7 (some of them just changed their arch, the others are obsolete)
+			'centos-release.x86_64', 'vzdummy-systemd-el7.noarch', 'systemd-sysv.x86_64', 'yum-plugin-fastestmirror.noarch',
+			'man-pages.noarch', 'sysvinit-tools.x86_64', 'ebtables.x86_64', 'authconfig.x86_64', 'vim-filesystem.x86_64',
+			'python-firewall.noarch', 'python-libs.x86_64', 'python.x86_64', 'pkgconfig.x86_64', 'pytalloc.x86_64',
+			'python-slip.noarch', 'python-slip-dbus.noarch', 'mariadb-libs.x86_64', 'rpm-python.x86_64', 'dhclient.x86_64',
+			'dhcp-common.x86_64', 'libselinux-python.x86_64', 'newt-python.x86_64',
+			]
+
+# PAckages to be added after upgrade from CentOS 7
+POST_UPGRADE_ADD_PKGS = ['binutils', 'perl', 'python2']
 
 # There is no harm if some processes became active/inacitve after upgrade.
 # mandb & logrotate can be launched by cron;
@@ -90,7 +126,11 @@ def parse_command_line():
 
 
 '''
-Check CT config - if OSTEMPLATE is set to centos-8 or almalinux-8
+Check CT config - if OSTEMPLATE is set to supported distro
+Return value:
+    0 - distro is not supported
+    1 - distro is supported, belongs to CentOS 8 family and can be converted directly to vzlinux 8
+    2 - distro is supported, belongs to CentOS 7 family and requires preliminary upgrade to CentOS 8
 '''
 def check_config(ctid):
     vz_private = None
@@ -102,13 +142,13 @@ def check_config(ctid):
                     break
     except Exception as e:
         log_info(ctid + ": Unable to check container config: " + str(e))
-        return False
+        return 0
 
     try:
         f = open(vz_private + "/" + ctid + "/ve.conf", "r")
     except Exception as e:
         log_info(ctid + ": Unable to check container config: " + str(e))
-        return False
+        return 0
 
     for l in f.readlines():
         if 'OSTEMPLATE=".centos-8-x86_64"' in l or 'OSTEMPLATE="centos-8-x86_64"' in l \
@@ -116,10 +156,15 @@ def check_config(ctid):
                 or 'OSTEMPLATE=".almalinux-8-x86_64"' in l or 'OSTEMPLATE="almalinux-8-x86_64"' in l \
                 or 'OSTEMPLATE=".almalinux-8"' in l or 'OSTEMPLATE="almalinux-8"' in l:
             f.close()
-            return True
+            return 1
+
+        if 'OSTEMPLATE=".centos-7-x86_64"' in l or 'OSTEMPLATE="centos-7-x86_64"' in l \
+                or 'OSTEMPLATE=".centos-7"' in l or 'OSTEMPLATE="centos-7"' in l :
+            f.close()
+            return 2
 
     f.close()
-    return False
+    return 0
 
 
 '''
@@ -166,8 +211,14 @@ Get list of ports open inside CT.
 We get list of ports using lsof (since netstat is not available by default)
 For every port we save command, protocol, node and port number
 '''
-def get_open_ports(ctid):
-    l = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, '/bin/lsof', '-Pi'])
+def get_open_ports(ctid, distro_kind=1):
+    # lsof has different locations in CentOS 7 and 8
+    if distro_kind == 1:
+        lsof_path = '/bin/lsof'
+    else:
+        lsof_path = '/sbin/lsof'
+
+    l = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, lsof_path, '-Pi'])
     all_ports = []
     for p in l.decode('utf-8').split('\n'):
         data = p.split()
@@ -212,6 +263,54 @@ def process_cts():
 
 
 '''
+Upgrade CentOS 7 CT to CentOS 8 one
+'''
+def upgrade_c7_ct(ct):
+    global args
+
+    vzpkg_args = ['upgrade']
+    if args.dry_run:
+        vzpkg_args.append('-n')
+
+    vzpkg_args.append(ct)
+
+    pr = subprocess.Popen(['/sbin/vzpkg'] + vzpkg_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+    if args.log:
+        ct_log = open(args.log + "." + ct, "w")
+    else:
+        ct_log = None
+    while True:
+        l = pr.stdout.readline()
+        if l == '' and pr.poll() != None:
+            break
+        if l:
+            log_info(l.strip(), ct_log)
+
+    # In case of dry run, we only check upgrade itself
+    if args.dry_run:
+        if args.log:
+            ct_log.close()
+        return
+
+    # Without dry run, we need to perform further update
+    pr = subprocess.Popen(['/sbin/vzpkg', 'update', ct], universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+    while True:
+        l = pr.stdout.readline()
+        if l == '' and pr.poll() != None:
+            break
+        if l:
+            log_info(l.strip(), ct_log)
+
+    for p in POST_UPGRADE_ADD_PKGS:
+        pr = subprocess.check_output(['/sbin/vzpkg', 'install', ct, '-p', p])
+        log_info(pr, ct_log)
+
+    if args.log:
+        ct_log.close()
+
+
+
+'''
 A thread function processing single CT
 '''
 def process_single_ct(ct):
@@ -228,7 +327,8 @@ def process_single_ct(ct):
             ct = str(l).strip()
             break
 
-    if not check_config(ct):
+    distro_kind = check_config(ct)
+    if not distro_kind:
         log_info(ct + ": Conversion aborted: Container's OS template is not supported")
         return
 
@@ -280,7 +380,7 @@ def process_single_ct(ct):
         old_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
         old_pkg_list = old_pkg_list_raw.split("\n")
         old_pkg_list = [p.split(" ")[0] for p in old_pkg_list]
-        old_ports_list = sorted(set(get_open_ports(ct)))
+        old_ports_list = sorted(set(get_open_ports(ct, distro_kind)))
 
 
     vzdeploy_args = ['-n']
@@ -295,6 +395,19 @@ def process_single_ct(ct):
     vzdeploy_args.append(ct)
 
     log_info("Starting conversion: " + ct + " at " + str(datetime.datetime.now().time()))
+
+    # For CentOS 7, we first need to upgrade to CentOS 8
+    if distro_kind == 2:
+        upgrade_c7_ct(ct)
+        # In case of dry-run, do not try to launch vzdeploy
+        if args.dry_run:
+            if need_stop:
+                try_stop_ct(ct)
+
+            log_info(ct + ": Conversion successful at " + str(datetime.datetime.now().time()))
+            return
+
+
     pr = subprocess.Popen(['/bin/vzdeploy8_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
     if args.log:
         ct_log = open(args.log + "." + ct, "w")
@@ -364,6 +477,7 @@ def get_upgradable():
         except:
             continue
         if ostemplate.endswith('centos-8-x86_64') or ostemplate.endswith('centos-8') \
+    		or ostemplate.endswith('centos-7-x86_64') or ostemplate.endswith('centos-7') \
     		or ostemplate.endswith('almalinux-8-x86_64') or ostemplate.endswith('almalinux-8'):
             print("%s (%s)" % (parts[2], parts[1]))
 
