@@ -110,7 +110,7 @@ def parse_command_line():
     subs = parser.add_subparsers(dest='list or convert')
     subs.required = True
 
-    list_parser = subs.add_parser('list', help='List convertable CentOS 8 / AlmaLinux 8 containers')
+    list_parser = subs.add_parser('list', help='List convertable CentOS 7 / CentOS 8 / AlmaLinux 8 containers')
     list_parser.set_defaults(func=get_upgradable)
 
     upgrade_parser = subs.add_parser('convert', help='Convert the specified containers to VzLinux 8')
