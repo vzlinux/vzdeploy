@@ -79,8 +79,8 @@ BLOCKER_PKGS = {'plesk': 'Plesk', 'cpanel': 'cPanel'}
 # Minimum free space we want to see inside the container
 SPACE_LIMIT = 1000000
 
-SUPPORTED_REPOS = ['appstream', 'baseos', 'extras', 'powertools', 'epel', 'epel-modular']
-
+SUPPORTED_REPOS = ['appstream', 'baseos', 'extras', 'powertools', 'epel', 'epel-modular',
+		    'base/7/x86_64', 'extras/7/x86_64', 'updates/7/x86_64']
 '''
 Simple log wrapper to print messages to eithe STDOUT or to logfile
 '''
@@ -190,9 +190,12 @@ def check_space(ctid):
 Check if we have enabled repos not supported by upgrade.
 Return False if yes (or when can't check), True if no
 '''
-def check_repos(ctid):
+def check_repos(ctid, distro_kind=1):
     try:
-        dnf_out = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, 'dnf', 'repolist', 'enabled'])
+        if distro_kind == 1:
+            dnf_out = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, 'dnf', 'repolist', 'enabled'])
+        else:
+            dnf_out = subprocess.check_output(['/sbin/vzctl', 'exec', ctid, 'yum', 'repolist', 'enabled'])
     except Exception as e:
         log_info(ctid + ": Unable to check the repositories in the container! " + str(e))
         return False
@@ -366,7 +369,7 @@ def process_single_ct(ct):
                 try_stop_ct(ctid)
             return
 
-    if not check_repos(ct):
+    if not check_repos(ct, distro_kind):
         if not args.strict:
             log_info(ct + ": Warning! Unsupported repositories detected")
         else:
