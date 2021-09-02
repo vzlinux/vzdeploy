@@ -24,48 +24,20 @@ ADDED_PKGS_IGNORE = ['annobin.x86_64', 'cpp.x86_64', 'dnf-plugins-core.noarch', 
                  'pkgconf-pkg-config.x86_64', 'pkgconf.x86_64', 'protobuf-c.x86_64', 'python3-dateutil.noarch',
                  'python3-dnf-plugins-core.noarch', 'rdma-core.x86_64', 'vzlinux-release.x86_64', 'zstd.x86_64',
                  'vzlinux-logos.noarch', 'vzlinux-logos-httpd.noarch',
-                  # The following ones are added when converting from C7
-                 'libssh.x86_64', 'compat-openssl10.x86_64', 'lua-libs.x86_64', 'iptables-libs.x86_64', 'systemd-container.x86_64', 'boost-system.x86_64', 'nettle.x86_64',
-                 'libreport-filesystem.x86_64', 'boost-date-time.x86_64', 'libsecret.x86_64', 'perl-Term-ANSIColor.noarch', 'perl-IO.x86_64', 'mariadb-connector-c-config.noarch',
-                 'vzlinux-cep-config.x86_64', 'python3-libdnf.x86_64', 'libkcapi-hmaccalc.x86_64', 'centos-logos-httpd.noarch', 'dmidecode.x86_64', 'python3-rpm.x86_64',
-                 'python3-libcomps.x86_64', 'iproute-tc.x86_64', 'boost-regex.x86_64', 'vzdummy-systemd-el8.noarch', 'smartmontools.x86_64', 'gdbm-libs.x86_64', 'python3-nftables.x86_64',
-                 'perl-Text-Tabs+Wrap.noarch', 'python3-six.noarch', 'perl-interpreter.x86_64', 'python3-xmltodict.noarch', 'systemd-udev.x86_64', 'cyrus-sasl-gssapi.x86_64',
-                 'python3-dbus.x86_64', 'httpd-filesystem.noarch', 'python3-pyudev.noarch', 'python3-slip-dbus.noarch', 'libusbx.x86_64', 'authselect-compat.x86_64', 'readonly-root.noarch',
-                 'pcre2.x86_64', 'bind-export-libs.x86_64', 'coreutils-common.x86_64', 'python3-pip-wheel.noarch',
-                 'numactl-libs.x86_64', 'python36.x86_64', 'ipcalc.x86_64', 'crypto-policies.noarch', 'yajl.x86_64', 'libxslt.x86_64', 'python3-dnf.noarch',
-                 'python3-gobject-base.x86_64', 'python3-psutil.x86_64', 'libsigsegv.x86_64', 'libcomps.x86_64', 'npth.x86_64', 'GeoIP-GeoLite-data.noarch',
-                 'elfutils-default-yama-scope.noarch', 'libxcrypt.x86_64', 'python3-pip.noarch', 'libzstd.x86_64', 'libidn2.x86_64', 'libicu.x86_64', 'boost-thread.x86_64', 'libnsl2.x86_64',
-                 'dbus-tools.x86_64', 'libfdisk.x86_64', 'ima-evm-utils.x86_64', 'platform-python.x86_64', 'libnftnl.x86_64', 'iptables-ebtables.x86_64',
-                 'crypto-policies-scripts.noarch', 'python3-decorator.noarch', 'mariadb-connector-c.x86_64', 'mariadb-common.x86_64', 'publicsuffix-list-dafsa.noarch',
-                 'libyaml.x86_64', 'authselect.x86_64', 'libmodulemd.x86_64', 'librepo.x86_64', 'libkcapi.x86_64', 'dnf.noarch', 'lsscsi.x86_64',
-                 'platform-python-pip.noarch', 'lshw.x86_64', 'python3-libselinux.x86_64', 'libmetalink.x86_64', 'brotli.x86_64', 'libksba.x86_64', 'fuse-libs.x86_64',
-                 'python3-setuptools-wheel.noarch', 'network-scripts.x86_64', 'glibc-all-langpacks.x86_64', 'netconsole-service.noarch', 'libseccomp.x86_64',
-                 'centos-gpg-keys.noarch', 'python3-gpg.x86_64', 'dbus-daemon.x86_64', 'libfastjson.x86_64', 'python3-libs.x86_64',
-                 'systemd-pam.x86_64', 'libmaxminddb.x86_64', 'nftables.x86_64', 'perl-Errno.x86_64', 'python3-configparser.noarch', 'dnf-data.noarch',
-                 'libssh-config.noarch', 'python3-hawkey.x86_64', 'python3-lxml.x86_64', 'python3-slip.noarch', 'disp-helper.x86_64', 'libpsl.x86_64', 'libsmartcols.x86_64',
-                 'gnutls.x86_64', 'mpfr.x86_64', 'libnsl.x86_64', 'man-pages.x86_64', 'lz4-libs.x86_64', 'boost-program-options.x86_64', 'perl-Term-Cap.noarch',
-                 'perl-MIME-Base64.x86_64', 'centos-obsolete-packages.noarch', 'dhcp-common.noarch', 'vim-filesystem.noarch', 'dbus-common.noarch', 'libdnf.x86_64',
-                 'mod_http2.x86_64', 'libvirt-libs.x86_64', 'dhcp-client.x86_64', 'python3-libvirt.x86_64', 'bc.x86_64', 'sqlite-libs.x86_64',
-                 'libunistring.x86_64', 'ncurses-compat-libs.x86_64', 'boost-filesystem.x86_64', 'python3-setuptools.noarch', 'tpm2-tss.x86_64', 'jansson.x86_64',
-                 'perl-Unicode-Normalize.x86_64', 'platform-python-setuptools.noarch', 'mariadb.x86_64', 'emacs-filesystem.noarch', 'authselect-libs.x86_64', 'libsolv.x86_64',
-                 'disp-helper-scripts-vz.x86_64', 'python3-firewall.noarch', 'libnghttp2.x86_64'
                  ]
 
 # The following packages are ok to drop - they are replaced by vzlinux ones
 DROPPED_PKGS_IGNORE = ['centos-linux-release.noarch', 'centos-linux-repos.noarch', 'centos-logos-httpd.noarch',
 			'centos-logos.noarch', 'centos-gpg-keys.noarch', 'almalinux-release.noarch', 'almalinux-repos.noarch',
 			'almalinux-logos-httpd.noarch', 'almalinux-logos.noarch', 'almalinux-gpg-keys.noarch',
-			'almalinux-release.x86_64',
-			# The following ones are dropped when updating from C7 (some of them just changed their arch, the others are obsolete)
-			'centos-release.x86_64', 'vzdummy-systemd-el7.noarch', 'systemd-sysv.x86_64', 'yum-plugin-fastestmirror.noarch',
-			'man-pages.noarch', 'sysvinit-tools.x86_64', 'ebtables.x86_64', 'authconfig.x86_64', 'vim-filesystem.x86_64',
-			'python-firewall.noarch', 'python-libs.x86_64', 'python.x86_64', 'pkgconfig.x86_64', 'pytalloc.x86_64',
-			'python-slip.noarch', 'python-slip-dbus.noarch', 'mariadb-libs.x86_64', 'rpm-python.x86_64', 'dhclient.x86_64',
-			'dhcp-common.x86_64', 'libselinux-python.x86_64', 'newt-python.x86_64',
+			'almalinux-release.x86_64', 'centos-indexhtml.noarch',
 			]
 
-# PAckages to be added after upgrade from CentOS 7
-POST_UPGRADE_ADD_PKGS = ['binutils', 'perl', 'python2']
+# Packages to be added after upgrade from CentOS 7
+POST_UPGRADE_ADD_PKGS = ['binutils', 'perl', 'python2', 'python2-chardet']
+
+# Some C7 templates are not available in C8 (though some of their packages might still exist)
+REMOVED_TMPL_IGNORE = ['tomcat', 'cloud-init']
 
 # There is no harm if some processes became active/inacitve after upgrade.
 # mandb & logrotate can be launched by cron;
@@ -290,6 +262,12 @@ def upgrade_c7_ct(ct):
         if l:
             log_info(l.strip(), ct_log)
 
+    if pr.returncode and pr.returncode != 0:
+        log_info("Failed to upgrade container from 7 to 8 family", ct_log)
+        if args.log:
+            ct_log.close()
+        sys.exit(1)
+
     # In case of dry run, we only check upgrade itself
     if args.dry_run:
         if args.log:
@@ -305,13 +283,18 @@ def upgrade_c7_ct(ct):
         if l:
             log_info(l.strip(), ct_log)
 
+    if pr.returncode and pr.returncode != 0:
+        log_info("Failed to update container after conversion from 7 to 8 family", ct_log)
+        if args.log:
+            ct_log.close()
+        sys.exit(1)
+
     for p in POST_UPGRADE_ADD_PKGS:
         pr = subprocess.check_output(['/sbin/vzpkg', 'install', ct, '-p', p])
         log_info(pr, ct_log)
 
     if args.log:
         ct_log.close()
-
 
 
 '''
@@ -385,6 +368,10 @@ def process_single_ct(ct):
         old_pkg_list = old_pkg_list_raw.split("\n")
         old_pkg_list = [p.split(" ")[0] for p in old_pkg_list]
         old_ports_list = sorted(set(get_open_ports(ct, distro_kind)))
+        # App template list
+        if distro_kind == 2:
+            old_tmpl_list_raw = sorted(set(subprocess.check_output(['/sbin/vzpkg', 'list', ct]).decode('utf-8').split("\n")))
+            old_tmpl_list = [p.split()[1] for p in old_tmpl_list_raw if len(p.split()) > 1]
 
 
     vzdeploy_args = ['-n']
@@ -430,6 +417,19 @@ def process_single_ct(ct):
 
     if not args.dry_run:
         save_timestamp(ct, distro_kind)
+
+        if distro_kind == 2:
+            new_tmpl_list_raw = sorted(set(subprocess.check_output(['/sbin/vzpkg', 'list', ct]).decode('utf-8').split("\n")))
+            new_tmpl_list = [p.split()[1] for p in new_tmpl_list_raw if len(p.split()) > 1]
+            readd_tmpl = [p for p in old_tmpl_list if p not in new_tmpl_list and p not in REMOVED_TMPL_IGNORE]
+            for t in readd_tmpl:
+                try:
+                    # There still can be templates missing in the new os and not covered in REMOVED_TMPL_IGNORE
+                    pr = subprocess.check_output(['/sbin/vzpkg', 'install', ct, t])
+                    log_info(pr)
+                except:
+                    pass
+
         new_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
         new_pkg_list = subprocess.check_output(['/sbin/vzpkg', 'list', '-p', ct]).decode('utf-8').split("\n")
         new_pkg_list = [p.split(" ")[0] for p in new_pkg_list]
@@ -440,10 +440,11 @@ def process_single_ct(ct):
         removed_ps = [p for p in old_proc_list if p not in new_proc_list and p not in CHANGED_PS_IGNORE]
         added_ports = [p for p in new_ports_list if p not in old_ports_list]
         removed_ports = [p for p in old_ports_list if p not in new_ports_list]
-        if added_pkgs:
+        if added_pkgs and distro_kind != 2:
+            # After upgrade from c7, we have a ton of added/removed packages, no sense to report them
             msg = ct + ": Warning!\nThe following packages were added compared to the old container state:" + str(added_pkgs)
             log_info(msg)
-        if removed_pkgs:
+        if removed_pkgs and distro_kind != 2:
             msg = ct + ": Warning!\nThe following packages were removed compared to the old container state:" + str(removed_pkgs)
             log_info(msg)
         if added_ps:
