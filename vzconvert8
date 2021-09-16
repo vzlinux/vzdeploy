@@ -28,10 +28,10 @@ ADDED_PKGS_IGNORE = ['annobin.x86_64', 'cpp.x86_64', 'dnf-plugins-core.noarch', 
 
 # The following packages are ok to drop - they are replaced by vzlinux ones
 DROPPED_PKGS_IGNORE = ['centos-linux-release.noarch', 'centos-linux-repos.noarch', 'centos-logos-httpd.noarch',
-			'centos-logos.noarch', 'centos-gpg-keys.noarch', 'almalinux-release.noarch', 'almalinux-repos.noarch',
-			'almalinux-logos-httpd.noarch', 'almalinux-logos.noarch', 'almalinux-gpg-keys.noarch',
-			'almalinux-release.x86_64', 'centos-indexhtml.noarch',
-			]
+                        'centos-logos.noarch', 'centos-gpg-keys.noarch', 'almalinux-release.noarch', 'almalinux-repos.noarch',
+                        'almalinux-logos-httpd.noarch', 'almalinux-logos.noarch', 'almalinux-gpg-keys.noarch',
+                        'almalinux-release.x86_64', 'centos-indexhtml.noarch',
+                        ]
 
 # Packages to be added after upgrade from CentOS 7
 POST_UPGRADE_ADD_PKGS = ['binutils', 'perl', 'python2', 'python2-chardet']
@@ -52,7 +52,7 @@ BLOCKER_PKGS = {'plesk': 'Plesk', 'cpanel': 'cPanel'}
 SPACE_LIMIT = 1000000
 
 SUPPORTED_REPOS = ['appstream', 'baseos', 'extras', 'powertools', 'epel', 'epel-modular',
-		    'base/7/x86_64', 'extras/7/x86_64', 'updates/7/x86_64']
+                    'base/7/x86_64', 'extras/7/x86_64', 'updates/7/x86_64']
 '''
 Simple log wrapper to print messages to eithe STDOUT or to logfile
 '''
@@ -485,8 +485,8 @@ def get_upgradable():
         except:
             continue
         if ostemplate.endswith('centos-8-x86_64') or ostemplate.endswith('centos-8') \
-    		or ostemplate.endswith('centos-7-x86_64') or ostemplate.endswith('centos-7') \
-    		or ostemplate.endswith('almalinux-8-x86_64') or ostemplate.endswith('almalinux-8'):
+                or ostemplate.endswith('centos-7-x86_64') or ostemplate.endswith('centos-7') \
+                or ostemplate.endswith('almalinux-8-x86_64') or ostemplate.endswith('almalinux-8'):
             print("%s (%s)" % (parts[2], parts[1]))
 
 if __name__ == '__main__':
