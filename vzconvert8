@@ -343,6 +343,13 @@ def process_single_ct(ct):
             log_info(ct + ": " + "Conversion aborted: Software unsupported by VzLinux 8 detected: " + BLOCKER_PKGS[b])
             log_info("Please contact the software vendor and request VzLinux 8 support")
             proceed = False
+
+    # DirectAdmin can't be detected by packages
+    check_da = subprocess.check_output(['/sbin/vzctl', 'exec', ct, 'file', '/usr/local/directadmin/directadmin' ]).decode('utf-8')
+    if 'ELF' in check_da:
+        log_info(ct + ": " + "Conversion aborted: We have detected DirectAdmin Software inside the CT. It will not function after the upgrade.")
+        proceed = False
+
     if not proceed:
         if need_stop:
             try_stop_ct(ctid)
