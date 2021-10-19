@@ -309,7 +309,7 @@ def process_single_ct(ct):
     global args
 
     try:
-        ctid = subprocess.check_output(['/sbin/vzlist', '-o', 'ctid', ct]).decode('utf-8')
+        ctid = subprocess.check_output(['/sbin/vzlist', '-H', '-o', 'ctid', ct]).decode('utf-8')
     except Exception as e:
         log_info("Failed to get info for container %s" % ct)
         return
