@@ -314,10 +314,7 @@ def process_single_ct(ct):
         log_info("Failed to get info for container %s" % ct)
         return
 
-    for l in ctid.split("\n"):
-        if 'CTID' not in l:
-            ct = str(l).strip()
-            break
+    ct = str(ctid).strip()
 
     distro_kind = check_config(ct)
     if not distro_kind:
@@ -355,7 +352,7 @@ def process_single_ct(ct):
 
     if not proceed:
         if need_stop:
-            try_stop_ct(ctid)
+            try_stop_ct(ct)
         return
 
     if not check_space(ct):
@@ -364,7 +361,7 @@ def process_single_ct(ct):
         else:
             log_info(ct + ": Conversion aborted: May not be enough free space in the container")
             if need_stop:
-                try_stop_ct(ctid)
+                try_stop_ct(ct)
             return
 
     if not check_repos(ct, distro_kind):
@@ -373,7 +370,7 @@ def process_single_ct(ct):
         else:
             log_info(ct + ": Conversion aborted: Unsupported repositories detected")
             if need_stop:
-                try_stop_ct(ctid)
+                try_stop_ct(ct)
             return
 
     if not args.dry_run:
