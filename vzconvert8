@@ -343,8 +343,8 @@ def process_single_ct(ct):
 
     # DirectAdmin can't be detected by packages
     try:
-        check_da = subprocess.check_output(['/sbin/vzctl', 'exec', ct, 'file', '/usr/local/directadmin/directadmin' ]).decode('utf-8')
-        if 'ELF' in check_da:
+        check_da = subprocess.check_output(['/sbin/vzctl', 'exec', ct, 'ls', '/usr/local/directadmin/directadmin' ]).decode('utf-8')
+        if check_da:
             log_info(ct + ": " + "Conversion aborted: We have detected DirectAdmin Software inside the CT. It will not function after the upgrade.")
             proceed = False
     except:
