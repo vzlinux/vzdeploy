@@ -350,6 +350,15 @@ def process_single_ct(ct):
     except:
         pass
 
+    # Need to enable ssh root login explicitely
+    try:
+        check_ssh = subprocess.check_output(['/sbin/vzctl', 'exec', ct, 'grep', '^PermitRootLogin', '/etc/ssh/sshd_config' ]).decode('utf-8')
+    except:
+        try:
+            subprocess.call(['/sbin/vzctl', 'exec', ct, 'sed', '"/#PermitRoot/aPermitRootLogin yes"', '-i', '/etc/ssh/sshd_config' ]).decode('utf-8')
+        except:
+            pass
+
     if not proceed:
         if need_stop:
             try_stop_ct(ct)
