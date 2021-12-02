@@ -383,7 +383,11 @@ def process_single_ct(ct):
             return
 
     if not args.dry_run:
-        snaphost_out = subprocess.check_output(['/bin/prlctl', 'snapshot', ct, '-n', 'pre-vzlinux8'])
+        try:
+            snaphost_out = subprocess.check_output(['/bin/prlctl', 'snapshot', ct, '-n', 'pre-vzlinux8'])
+        except:
+            snaphost_out = subprocess.check_output(['/sbin/vzctl', 'snapshot', ct, '-n', 'pre-vzlinux8'])
+
         log_info(ct + ": " + snaphost_out.decode('utf-8'))
         old_proc_list = sorted(set(subprocess.check_output(['/bin/vzps', '-Ao', 'fname', '-E', ct]).decode('utf-8').split("\n")))
         old_pkg_list = old_pkg_list_raw.split("\n")
