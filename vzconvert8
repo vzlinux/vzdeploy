@@ -125,11 +125,13 @@ def check_config(ctid):
 
     c7_available = check_c8_tmp_ver()
     if not c7_available:
-        print("WARNING: Your version of centos-8-x86_64-ez template is too old, upgrade of CentOS 7 CTs is not available.\n")
+        print("WARNING: Your version of centos-8.stream-x86_64-ez template is too old, upgrade of CentOS 7 CTs is not available.\n")
 
     for l in f.readlines():
-        if 'OSTEMPLATE=".centos-8-x86_64"' in l or 'OSTEMPLATE="centos-8-x86_64"' in l \
-                or 'OSTEMPLATE=".centos-8"' in l or 'OSTEMPLATE="centos-8"' in l \
+        if 'OSTEMPLATE=".centos-8.stream-x86_64"' in l or 'OSTEMPLATE="centos-8.stream-x86_64"' in l \
+                or 'OSTEMPLATE=".centos-8.stream"' in l or 'OSTEMPLATE="centos-8.stream"' in l \
+                or 'OSTEMPLATE=".centos-8-x86_64"' in l or 'OSTEMPLATE="centos-8-x86_64"' in l \
+                or 'OSTEMPLATE=".centos-8"' in l or 'OSTEMPLATE="centos-8"' in l:
                 or 'OSTEMPLATE=".almalinux-8-x86_64"' in l or 'OSTEMPLATE="almalinux-8-x86_64"' in l \
                 or 'OSTEMPLATE=".almalinux-8"' in l or 'OSTEMPLATE="almalinux-8"' in l:
             f.close()
@@ -502,11 +504,11 @@ def save_timestamp(ctid, distro_kind=1):
         subprocess.call(['/sbin/vzctl', 'exec', ctid, '/bin/touch', '/var/log/vzconvert7.stamp'])
 
 '''
-Check if version of centos-8 template package is suitable for c7 -> vzl8 upgrade
+Check if version of centos-8.stream template package is suitable for c7 -> vzl8 upgrade
 '''
 def check_c8_tmp_ver():
     try:
-        c8_tmpl_ver = subprocess.check_output(['/bin/rpm', '-q', '--qf', '%{RELEASE}', 'centos-8-x86_64-ez']).decode('utf-8')
+        c8_tmpl_ver = subprocess.check_output(['/bin/rpm', '-q', '--qf', '%{RELEASE}', 'centos-8.stream-x86_64-ez']).decode('utf-8')
     except:
         return False
 
@@ -523,7 +525,7 @@ Get a list of containers that can be subjected for upgrade
 def get_upgradable():
     c7_available = check_c8_tmp_ver()
     if not c7_available:
-        print("WARNING: Your version of centos-8-x86_64-ez template is too old, upgrade of CentOS 7 CTs is not available.\n")
+        print("WARNING: Your version of centos-8.stream-x86_64-ez template is too old, upgrade of CentOS 7 CTs is not available.\n")
     all_ct = subprocess.check_output(['/sbin/vzlist', '-a', '-o', 'ostemplate,ctid,name'])
     for l in all_ct.decode('utf-8').split("\n"):
         try:
@@ -531,7 +533,8 @@ def get_upgradable():
             ostemplate = parts[0]
         except:
             continue
-        if ostemplate.endswith('centos-8-x86_64') or ostemplate.endswith('centos-8') \
+        if ostemplate.endswith('centos-8.stream-x86_64') or ostemplate.endswith('centos-8.stream') \
+                or ostemplate.endswith('centos-8-x86_64') or ostemplate.endswith('centos-8') \
                 or (c7_available and (ostemplate.endswith('centos-7-x86_64') or ostemplate.endswith('centos-7'))) \
                 or ostemplate.endswith('almalinux-8-x86_64') or ostemplate.endswith('almalinux-8'):
             print("%s (%s)" % (parts[2], parts[1]))
