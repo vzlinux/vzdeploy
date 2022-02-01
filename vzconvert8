@@ -131,7 +131,7 @@ def check_config(ctid):
         if 'OSTEMPLATE=".centos-8.stream-x86_64"' in l or 'OSTEMPLATE="centos-8.stream-x86_64"' in l \
                 or 'OSTEMPLATE=".centos-8.stream"' in l or 'OSTEMPLATE="centos-8.stream"' in l \
                 or 'OSTEMPLATE=".centos-8-x86_64"' in l or 'OSTEMPLATE="centos-8-x86_64"' in l \
-                or 'OSTEMPLATE=".centos-8"' in l or 'OSTEMPLATE="centos-8"' in l:
+                or 'OSTEMPLATE=".centos-8"' in l or 'OSTEMPLATE="centos-8"' in l \
                 or 'OSTEMPLATE=".almalinux-8-x86_64"' in l or 'OSTEMPLATE="almalinux-8-x86_64"' in l \
                 or 'OSTEMPLATE=".almalinux-8"' in l or 'OSTEMPLATE="almalinux-8"' in l:
             f.close()
