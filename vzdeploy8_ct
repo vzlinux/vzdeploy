@@ -6,7 +6,7 @@ trap cleanup SIGINT SIGTERM ERR EXIT
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
 
 # We need to track what we are converting for the dry run - centos, alma or smth else
-TMPL=centos
+TMPL=centos-8
 
 usage() {
   cat <<EOF
@@ -87,6 +87,9 @@ CT_PRIV=`cat /etc/vz/vz.conf | grep '^VE_PRIVATE=' | sed 's/VE_PRIVATE=//' | sed
 CT_VE="${CT_PRIV}${ct_id}/ve.conf"
 if [ -f "${CT_VE}" ]; then
     grep -q almalinux "${CT_VE}" && TMPL=almalinux
+    grep -q centos-8.stream "${CT_VE}" && TMPL=centos-8.stream
+    # Both centos stream and centos are converted to stable vzlinux
+    sed -i 's!centos-8.stream!vzlinux-8!g' "${CT_VE}"
     sed -i 's!centos-8!vzlinux-8!g' "${CT_VE}"
     sed -i 's!almalinux-8!vzlinux-8!g' "${CT_VE}"
 else 
@@ -109,7 +112,7 @@ if [ ${dryrun} -eq "1" ]; then
 		echo "Upgrade is possible"
 	fi
         CT_PRIV=`cat /etc/vz/vz.conf | grep '^VE_PRIVATE=' | sed 's/VE_PRIVATE=//' | sed 's/"//g' | sed "s/'//g" | sed 's/$VEID//g' `
-	sed -i "s!vzlinux-8!${TMPL}-8!g" "${CT_PRIV}${ct_id}/ve.conf"
+	sed -i "s!vzlinux-8!${TMPL}!g" "${CT_PRIV}${ct_id}/ve.conf"
 	exit;
 fi
 if [ ${nonetwork} -eq "1" ]; then
