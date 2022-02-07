@@ -51,6 +51,7 @@ BLOCKER_PKGS = {'plesk': 'Plesk', 'cpanel': 'cPanel'}
 # Minimum free space we want to see inside the container
 SPACE_LIMIT = 1000000
 
+# We also supports all remi* repos, but we just check for 'remi' prefix in the code
 SUPPORTED_REPOS = ['appstream', 'baseos', 'extras', 'powertools', 'epel', 'epel-modular',
                     'base/7/x86_64', 'extras/7/x86_64', 'updates/7/x86_64']
 '''
@@ -184,6 +185,8 @@ def check_repos(ctid, distro_kind=1):
             continue
         repo_id = l.split(" ")[0]
         if repo_id and repo_id not in SUPPORTED_REPOS:
+            if repo_id.startswith('remi'):
+                continue
             log_info(ctid + ": The following unsupported repository is enabled in the container: " + str(repo_id))
             return False
 
