@@ -414,33 +414,48 @@ def process_single_ct(ct):
 
     log_info("Starting conversion: " + ct + " at " + str(datetime.datetime.now().time()))
 
-    # For CentOS 7, we first need to upgrade to CentOS 8
+    # For CentOS 7, we first convert to VzLinux7 and then use 'vzpkg upgrade'
     if distro_kind == 2:
-        upgrade_c7_ct(ct)
-        # In case of dry-run, do not try to launch vzdeploy
+        pr = subprocess.Popen(['/bin/vzdeploy7_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+        if args.log:
+            ct_log = open(args.log + "." + ct, "w")
+        else:
+            ct_log = None
+        while True:
+            l = pr.stdout.readline()
+            if l == '' and pr.poll() != None:
+                break
+            if 'Warning! rpmdb:' in l or 'ERROR: ld.so:' in l:
+                continue
+            if l:
+                log_info(l.strip(), ct_log)
+        if args.log:
+            ct_log.close()
+
+        # In case of dry-run, do not try to launch vzpkg upgrade
         if args.dry_run:
             if need_stop:
                 try_stop_ct(ct)
 
             log_info(ct + ": Conversion successful at " + str(datetime.datetime.now().time()))
             return
-
-
-    pr = subprocess.Popen(['/bin/vzdeploy8_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
-    if args.log:
-        ct_log = open(args.log + "." + ct, "w")
+        upgrade_c7_ct(ct)
     else:
-        ct_log = None
-    while True:
-        l = pr.stdout.readline()
-        if l == '' and pr.poll() != None:
-            break
-        if 'Warning! rpmdb:' in l or 'ERROR: ld.so:' in l:
-            continue
-        if l:
-            log_info(l.strip(), ct_log)
-    if args.log:
-        ct_log.close()
+        pr = subprocess.Popen(['/bin/vzdeploy8_ct'] + vzdeploy_args, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+        if args.log:
+            ct_log = open(args.log + "." + ct, "w")
+        else:
+            ct_log = None
+        while True:
+            l = pr.stdout.readline()
+            if l == '' and pr.poll() != None:
+                break
+            if 'Warning! rpmdb:' in l or 'ERROR: ld.so:' in l:
+                continue
+            if l:
+                log_info(l.strip(), ct_log)
+        if args.log:
+            ct_log.close()
 
     if not args.dry_run:
         save_timestamp(ct, distro_kind)
