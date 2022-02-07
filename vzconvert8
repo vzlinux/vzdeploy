@@ -348,7 +348,7 @@ def process_single_ct(ct):
 
     # DirectAdmin can't be detected by packages
     try:
-        check_da = subprocess.check_output(['/sbin/vzctl', 'exec', ct, 'ls', '/usr/local/directadmin/directadmin' ]).decode('utf-8')
+        check_da = subprocess.check_output(['/sbin/vzctl', 'exec', ct, 'ls', '/usr/local/directadmin/directadmin'], stderr=subprocess.DEVNULL).decode('utf-8')
         if check_da:
             log_info(ct + ": " + "Conversion aborted: We have detected DirectAdmin Software inside the CT. It will not function after the upgrade.")
             proceed = False
@@ -357,10 +357,10 @@ def process_single_ct(ct):
 
     # Need to enable ssh root login explicitely
     try:
-        check_ssh = subprocess.check_output(['/sbin/vzctl', 'exec', ct, 'grep', '^PermitRootLogin', '/etc/ssh/sshd_config' ]).decode('utf-8')
+        check_ssh = subprocess.check_output(['/sbin/vzctl', 'exec', ct, 'grep', '^PermitRootLogin', '/etc/ssh/sshd_config']).decode('utf-8')
     except:
         try:
-            subprocess.call(['/sbin/vzctl', 'exec', ct, 'sed', '"/#PermitRoot/aPermitRootLogin yes"', '-i', '/etc/ssh/sshd_config' ]).decode('utf-8')
+            subprocess.call(['/sbin/vzctl', 'exec', ct, 'sed', '"/#PermitRoot/aPermitRootLogin yes"', '-i', '/etc/ssh/sshd_config']).decode('utf-8')
         except:
             pass
 
