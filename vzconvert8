@@ -124,9 +124,9 @@ def check_config(ctid):
         log_info(ctid + ": Unable to check container config: " + str(e))
         return 0
 
-    c7_available = check_c8_tmp_ver()
+    c7_available = check_vzl8_tmp_ver()
     if not c7_available:
-        print("WARNING: Your version of centos-8.stream-x86_64-ez template is too old, upgrade of CentOS 7 CTs is not available.\n")
+        print("WARNING: Your version of vzlinux-8-x86_64-ez template is too old, upgrade of CentOS 7 CTs is not available.\n")
 
     for l in f.readlines():
         if 'OSTEMPLATE=".centos-8.stream-x86_64"' in l or 'OSTEMPLATE="centos-8.stream-x86_64"' in l \
@@ -524,16 +524,16 @@ def save_timestamp(ctid, distro_kind=1):
 '''
 Check if version of centos-8.stream template package is suitable for c7 -> vzl8 upgrade
 '''
-def check_c8_tmp_ver():
+def check_vzl8_tmp_ver():
     try:
-        c8_tmpl_ver = subprocess.check_output(['/bin/rpm', '-q', '--qf', '%{RELEASE}', 'centos-8.stream-x86_64-ez']).decode('utf-8')
+        vzl8_tmpl_ver = subprocess.check_output(['/bin/rpm', '-q', '--qf', '%{RELEASE}', 'vzlinux-8-x86_64-ez']).decode('utf-8')
     except:
         return False
 
-    if not c8_tmpl_ver:
+    if not vzl8_tmpl_ver:
         return False
-    c8_tmpl_ver = c8_tmpl_ver.replace(".vz7", "").replace(".vz8", "").replace(".vz9", "")
-    if int(c8_tmpl_ver) < 11:
+    vzl8_tmpl_ver = vzl8_tmpl_ver.replace(".vz7", "").replace(".vz8", "").replace(".vz9", "")
+    if int(vzl8_tmpl_ver) < 18:
         return False
     return True
 
@@ -541,9 +541,9 @@ def check_c8_tmp_ver():
 Get a list of containers that can be subjected for upgrade
 '''
 def get_upgradable():
-    c7_available = check_c8_tmp_ver()
+    c7_available = check_vzl8_tmp_ver()
     if not c7_available:
-        print("WARNING: Your version of centos-8.stream-x86_64-ez template is too old, upgrade of CentOS 7 CTs is not available.\n")
+        print("WARNING: Your version of vzlinux-8-x86_64-ez template is too old, upgrade of CentOS 7 CTs is not available.\n")
     all_ct = subprocess.check_output(['/sbin/vzlist', '-a', '-o', 'ostemplate,ctid,name'])
     for l in all_ct.decode('utf-8').split("\n"):
         try:
