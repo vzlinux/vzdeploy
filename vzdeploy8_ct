@@ -86,12 +86,14 @@ change_distro() {
 CT_PRIV=`cat /etc/vz/vz.conf | grep '^VE_PRIVATE=' | sed 's/VE_PRIVATE=//' | sed 's/"//g' | sed "s/'//g" | sed 's/$VEID//g' `
 CT_VE="${CT_PRIV}${ct_id}/ve.conf"
 if [ -f "${CT_VE}" ]; then
-    grep -q almalinux "${CT_VE}" && TMPL=almalinux
+    grep -q almalinux "${CT_VE}" && TMPL=almalinux-8
+    grep -q rockylinux "${CT_VE}" && TMPL=rockylinux-8
     grep -q centos-8.stream "${CT_VE}" && TMPL=centos-8.stream
     # Both centos stream and centos are converted to stable vzlinux
     sed -i 's!centos-8.stream!vzlinux-8!g' "${CT_VE}"
     sed -i 's!centos-8!vzlinux-8!g' "${CT_VE}"
     sed -i 's!almalinux-8!vzlinux-8!g' "${CT_VE}"
+    sed -i 's!rockylinux-8!vzlinux-8!g' "${CT_VE}"
 else 
     echo "${CT_VE} config does not exist. Exiting"
     exit;
